@@ -10,7 +10,7 @@ import './widgets/weekly_macro_trends.dart';
 import './widgets/macro_food_suggestions.dart';
 
 class MacroTrackingDashboard extends StatefulWidget {
-  const MacroTrackingDashboard({Key? key}) : super(key: key);
+  const MacroTrackingDashboard({super.key});
 
   @override
   State<MacroTrackingDashboard> createState() => _MacroTrackingDashboardState();
@@ -133,11 +133,11 @@ class _MacroTrackingDashboardState extends State<MacroTrackingDashboard>
 
   double get _consumedCalories {
     double total = 0;
-    _mealMacros.values.forEach((meals) {
+    for (var meals in _mealMacros.values) {
       for (var meal in meals) {
         total += meal['calories'];
       }
-    });
+    }
     return total;
   }
 

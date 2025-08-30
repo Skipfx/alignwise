@@ -12,7 +12,7 @@ import './widgets/friend_activity_header.dart';
 import './widgets/story_highlights_widget.dart';
 
 class CommunityFeed extends StatefulWidget {
-  const CommunityFeed({Key? key}) : super(key: key);
+  const CommunityFeed({super.key});
 
   @override
   State<CommunityFeed> createState() => _CommunityFeedState();

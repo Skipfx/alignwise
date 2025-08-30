@@ -8,10 +8,10 @@ class SleepSoundsWidget extends StatefulWidget {
   final Function(Map<String, dynamic> sound, int? timerMinutes) onSoundPlay;
 
   const SleepSoundsWidget({
-    Key? key,
+    super.key,
     required this.sleepSounds,
     required this.onSoundPlay,
-  }) : super(key: key);
+  });
 
   @override
   State<SleepSoundsWidget> createState() => _SleepSoundsWidgetState();

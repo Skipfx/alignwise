@@ -11,13 +11,13 @@ class MealSectionWidget extends StatefulWidget {
   final Function(int, int) onUpdateQuantity;
 
   const MealSectionWidget({
-    Key? key,
+    super.key,
     required this.mealType,
     required this.foodItems,
     required this.onAddFood,
     required this.onRemoveFood,
     required this.onUpdateQuantity,
-  }) : super(key: key);
+  });
 
   @override
   State<MealSectionWidget> createState() => _MealSectionWidgetState();

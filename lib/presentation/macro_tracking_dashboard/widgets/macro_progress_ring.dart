@@ -12,14 +12,14 @@ class MacroProgressRing extends StatelessWidget {
   final AnimationController animationController;
 
   const MacroProgressRing({
-    Key? key,
+    super.key,
     required this.label,
     required this.consumed,
     required this.target,
     required this.unit,
     required this.color,
     required this.animationController,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +66,7 @@ class MacroProgressRing extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          '${consumed.toStringAsFixed(1)}',
+                          consumed.toStringAsFixed(1),
                           style: AppTheme.lightTheme.textTheme.titleSmall
                               ?.copyWith(
                             fontWeight: FontWeight.bold,

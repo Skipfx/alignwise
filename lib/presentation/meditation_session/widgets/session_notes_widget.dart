@@ -6,10 +6,10 @@ class SessionNotesWidget extends StatefulWidget {
   final int currentTime;
 
   const SessionNotesWidget({
-    Key? key,
+    super.key,
     required this.sessionNotes,
     required this.currentTime,
-  }) : super(key: key);
+  });
 
   @override
   State<SessionNotesWidget> createState() => _SessionNotesWidgetState();

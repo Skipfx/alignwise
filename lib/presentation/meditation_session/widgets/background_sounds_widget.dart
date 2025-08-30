@@ -12,14 +12,14 @@ class BackgroundSoundsWidget extends StatelessWidget {
   final VoidCallback onClose;
 
   const BackgroundSoundsWidget({
-    Key? key,
+    super.key,
     required this.availableSounds,
     required this.selectedSound,
     required this.backgroundVolume,
     required this.onSoundSelected,
     required this.onVolumeChanged,
     required this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

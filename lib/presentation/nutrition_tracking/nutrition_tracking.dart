@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
-import '../../services/gemini_service.dart';
-import '../../services/nutrition_storage_service.dart';
+import '../../services/wellness_service.dart';
 import './widgets/add_food_bottom_sheet.dart';
 import './widgets/calorie_progress_widget.dart';
 import './widgets/meal_section_widget.dart';
 import './widgets/water_tracking_widget.dart';
 
 class NutritionTracking extends StatefulWidget {
-  const NutritionTracking({Key? key}) : super(key: key);
+  const NutritionTracking({super.key});
 
   @override
   State<NutritionTracking> createState() => _NutritionTrackingState();
@@ -20,27 +19,22 @@ class _NutritionTrackingState extends State<NutritionTracking>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
-  final NutritionStorageService _storageService = NutritionStorageService();
-  final GeminiService _geminiService = GeminiService();
+  final WellnessService _wellnessService = WellnessService();
 
-  int _currentWaterGlasses = 3;
+  int _currentWaterGlasses = 0;
   int _targetWaterGlasses = 8;
 
-  // Daily nutrition targets (will be loaded from storage)
+  // Daily nutrition targets (loaded from Supabase)
   int _targetCalories = 2000;
   double _targetProtein = 150.0;
   double _targetCarbs = 250.0;
   double _targetFat = 67.0;
 
-  // Real meal data (replacing mock data)
-  Map<String, List<Map<String, dynamic>>> _mealData = {
-    'Breakfast': [],
-    'Lunch': [],
-    'Dinner': [],
-    'Snacks': [],
-  };
+  // Real meal data from Supabase
+  List<Map<String, dynamic>> _todayMeals = [];
 
   bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -56,23 +50,28 @@ class _NutritionTrackingState extends State<NutritionTracking>
     super.dispose();
   }
 
-  String get _todayDateKey {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
   Future<void> _loadTodayData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
-      final todayData = await _storageService.loadDailyNutrition(_todayDateKey);
-      final waterIntake = await _storageService.loadWaterIntake(_todayDateKey);
+      // Load meals from Supabase
+      final meals = await _wellnessService.getMealsForToday();
+
+      // Load water intake from Supabase
+      final waterIntakeMl = await _wellnessService.getDailyWaterIntake();
 
       setState(() {
-        _mealData = todayData;
-        _currentWaterGlasses = waterIntake;
+        _todayMeals = meals;
+        _currentWaterGlasses =
+            (waterIntakeMl / 250).round(); // Convert ml to glasses
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
+        _error = e.toString();
         _isLoading = false;
       });
     }
@@ -80,70 +79,76 @@ class _NutritionTrackingState extends State<NutritionTracking>
 
   Future<void> _loadNutritionGoals() async {
     try {
-      final goals = await _storageService.loadNutritionGoals();
+      final goals = await _wellnessService.getUserGoals();
       setState(() {
-        _targetCalories = goals['calories'] as int;
-        _targetProtein = goals['protein'] as double;
-        _targetCarbs = goals['carbs'] as double;
-        _targetFat = goals['fat'] as double;
-        _targetWaterGlasses = goals['water'] as int;
+        _targetCalories = goals['target_calories'] ?? 2000;
+        _targetProtein = (goals['target_protein'] ?? 150.0).toDouble();
+        _targetCarbs = (goals['target_carbs'] ?? 250.0).toDouble();
+        _targetFat = (goals['target_fat'] ?? 67.0).toDouble();
+        _targetWaterGlasses =
+            ((goals['target_water_ml'] ?? 2000) / 250).round();
       });
-    } catch (e) {
-      // Use default values
+        } catch (e) {
+      // Use default values on error
+      debugPrint('Error loading nutrition goals: $e');
     }
   }
 
-  Future<void> _saveTodayData() async {
-    await _storageService.saveDailyNutrition(_todayDateKey, _mealData);
-    await _storageService.saveWaterIntake(_todayDateKey, _currentWaterGlasses);
+  Map<String, List<Map<String, dynamic>>> _organizeMealsByType() {
+    final organizedMeals = <String, List<Map<String, dynamic>>>{
+      'Breakfast': [],
+      'Lunch': [],
+      'Dinner': [],
+      'Snacks': [],
+    };
+
+    for (final meal in _todayMeals) {
+      final mealType = meal['meal_type'] as String? ?? 'Snacks';
+      final capitalizedType = mealType[0].toUpperCase() + mealType.substring(1);
+
+      if (organizedMeals.containsKey(capitalizedType)) {
+        organizedMeals[capitalizedType]!.add(meal);
+      } else {
+        organizedMeals['Snacks']!.add(meal);
+      }
+    }
+
+    return organizedMeals;
   }
 
   int _calculateTotalCalories() {
-    int total = 0;
-    _mealData.forEach((mealType, foods) {
-      for (var food in foods as List) {
-        final foodMap = food as Map<String, dynamic>;
-        final calories = foodMap['calories'] as int? ?? 0;
-        final quantity = foodMap['quantity'] as int? ?? 1;
-        total += calories * quantity;
-      }
+    return _todayMeals.fold<int>(0, (sum, meal) {
+      return sum + ((meal['calories'] as int?) ?? 0);
     });
-    return total;
   }
 
   double _calculateTotalMacro(String macroType) {
-    double total = 0.0;
-    _mealData.forEach((mealType, foods) {
-      for (var food in foods as List) {
-        final foodMap = food as Map<String, dynamic>;
-        final macro = foodMap[macroType] as double? ?? 0.0;
-        final quantity = foodMap['quantity'] as int? ?? 1;
-        total += macro * quantity;
-      }
+    return _todayMeals.fold<double>(0.0, (sum, meal) {
+      return sum + ((meal[macroType] as double?) ?? 0.0);
     });
-    return total;
   }
 
-  void _addFoodToMeal(String mealType, Map<String, dynamic> food) {
-    setState(() {
-      (_mealData[mealType] as List).add(food);
-    });
-    _saveTodayData();
-  }
+  void _addFoodToMeal(String mealType, Map<String, dynamic> food) async {
+    try {
+      await _wellnessService.logMeal(
+        mealType: mealType.toLowerCase(),
+        name: food['name'] ?? 'Unknown Food',
+        calories: food['calories'] ?? 0,
+        protein: (food['protein'] ?? 0.0).toDouble(),
+        carbs: (food['carbs'] ?? 0.0).toDouble(),
+        fat: (food['fat'] ?? 0.0).toDouble(),
+      );
 
-  void _removeFoodFromMeal(String mealType, int index) {
-    setState(() {
-      (_mealData[mealType] as List).removeAt(index);
-    });
-    _saveTodayData();
-  }
-
-  void _updateFoodQuantity(String mealType, int index, int newQuantity) {
-    setState(() {
-      ((_mealData[mealType] as List)[index]
-          as Map<String, dynamic>)['quantity'] = newQuantity;
-    });
-    _saveTodayData();
+      // Reload data to reflect changes
+      await _loadTodayData();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding meal: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showAddFoodBottomSheet(String mealType) {
@@ -154,9 +159,22 @@ class _NutritionTrackingState extends State<NutritionTracking>
       builder: (context) => AddFoodBottomSheet(
         mealType: mealType,
         onFoodAdded: (food) => _addFoodToMeal(mealType, food),
-        geminiService: _geminiService,
       ),
     );
+  }
+
+  Future<void> _logWaterIntake() async {
+    try {
+      await _wellnessService.logWater(250); // 250ml = 1 glass
+      await _loadTodayData(); // Reload to update UI
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error logging water: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -181,7 +199,43 @@ class _NutritionTrackingState extends State<NutritionTracking>
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 2.h),
-              Text('Loading nutrition data...'),
+              Text('Loading nutrition data from Supabase...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text('Nutrition Tracking'),
+          leading: IconButton(
+            onPressed: () => Navigator.pushNamed(context, '/dashboard-home'),
+            icon: CustomIconWidget(
+              iconName: 'arrow_back',
+              color: AppTheme.lightTheme.colorScheme.onSurface,
+              size: 24,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomIconWidget(
+                iconName: 'error',
+                color: AppTheme.lightTheme.colorScheme.error,
+                size: 48,
+              ),
+              SizedBox(height: 2.h),
+              Text('Error loading data: $_error'),
+              SizedBox(height: 2.h),
+              ElevatedButton(
+                onPressed: _loadTodayData,
+                child: Text('Retry'),
+              ),
             ],
           ),
         ),
@@ -192,6 +246,7 @@ class _NutritionTrackingState extends State<NutritionTracking>
     final consumedProtein = _calculateTotalMacro('protein');
     final consumedCarbs = _calculateTotalMacro('carbs');
     final consumedFat = _calculateTotalMacro('fat');
+    final organizedMeals = _organizeMealsByType();
 
     return Scaffold(
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
@@ -235,8 +290,8 @@ class _NutritionTrackingState extends State<NutritionTracking>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildTodayView(
-              consumedCalories, consumedProtein, consumedCarbs, consumedFat),
+          _buildTodayView(consumedCalories, consumedProtein, consumedCarbs,
+              consumedFat, organizedMeals),
           _buildWeeklyView(),
           _buildGoalsView(),
         ],
@@ -254,13 +309,14 @@ class _NutritionTrackingState extends State<NutritionTracking>
     );
   }
 
-  Widget _buildTodayView(int consumedCalories, double consumedProtein,
-      double consumedCarbs, double consumedFat) {
+  Widget _buildTodayView(
+      int consumedCalories,
+      double consumedProtein,
+      double consumedCarbs,
+      double consumedFat,
+      Map<String, List<Map<String, dynamic>>> organizedMeals) {
     return RefreshIndicator(
-      onRefresh: () async {
-        await _loadTodayData();
-        await _loadNutritionGoals();
-      },
+      onRefresh: _loadTodayData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
@@ -275,25 +331,21 @@ class _NutritionTrackingState extends State<NutritionTracking>
               consumedFat: consumedFat,
               targetFat: _targetFat,
             ),
-            ..._mealData.keys.map((mealType) => MealSectionWidget(
+            ...organizedMeals.keys.map((mealType) => MealSectionWidget(
                   mealType: mealType,
-                  foodItems: _mealData[mealType] ?? [],
+                  foodItems: organizedMeals[mealType] ?? [],
                   onAddFood: () => _showAddFoodBottomSheet(mealType),
-                  onRemoveFood: (index) => _removeFoodFromMeal(mealType, index),
-                  onUpdateQuantity: (index, quantity) =>
-                      _updateFoodQuantity(mealType, index, quantity),
+                  onRemoveFood:
+                      (index) {}, // TODO: Implement delete from Supabase
+                  onUpdateQuantity: (index,
+                      quantity) {}, // TODO: Implement update in Supabase
                 )),
             WaterTrackingWidget(
               currentGlasses: _currentWaterGlasses,
               targetGlasses: _targetWaterGlasses,
-              onAddGlass: () {
-                setState(() => _currentWaterGlasses++);
-                _saveTodayData();
-              },
+              onAddGlass: _logWaterIntake,
               onRemoveGlass: () {
-                setState(() => _currentWaterGlasses =
-                    (_currentWaterGlasses - 1).clamp(0, _targetWaterGlasses));
-                _saveTodayData();
+                // TODO: Implement water removal if needed
               },
             ),
             SizedBox(height: 10.h),
@@ -304,236 +356,31 @@ class _NutritionTrackingState extends State<NutritionTracking>
   }
 
   Widget _buildWeeklyView() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getWeeklyData(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 2.h),
-                Text('Loading weekly data...'),
-              ],
-            ),
-          );
-        }
-
-        final weeklyData = snapshot.data ?? [];
-
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                margin: EdgeInsets.all(4.w),
-                padding: EdgeInsets.all(4.w),
-                decoration: BoxDecoration(
-                  color: AppTheme.lightTheme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Weekly Overview',
-                      style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Container(
-                      height: 30.h,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: weeklyData.map((data) {
-                          final calories = data['calories'] as int;
-                          final target = data['target'] as int;
-                          final progress = calories / target;
-                          final isToday = data['day'] == 'Today';
-
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '$calories',
-                                style: AppTheme.lightTheme.textTheme.bodySmall
-                                    ?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: isToday
-                                      ? AppTheme.lightTheme.primaryColor
-                                      : null,
-                                ),
-                              ),
-                              SizedBox(height: 1.h),
-                              Container(
-                                width: 8.w,
-                                height: (20.h * progress).clamp(2.h, 20.h),
-                                decoration: BoxDecoration(
-                                  color: isToday
-                                      ? AppTheme.lightTheme.primaryColor
-                                      : progress > 1.0
-                                          ? AppTheme
-                                              .lightTheme.colorScheme.error
-                                          : AppTheme
-                                              .lightTheme.colorScheme.secondary,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                              SizedBox(height: 1.h),
-                              Text(
-                                data['day'] as String,
-                                style: AppTheme.lightTheme.textTheme.bodySmall
-                                    ?.copyWith(
-                                  fontWeight: isToday
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  color: isToday
-                                      ? AppTheme.lightTheme.primaryColor
-                                      : null,
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildWeeklyStatCard(
-                            'Avg Calories',
-                            '${_calculateWeeklyAverage(weeklyData)}',
-                            'kcal/day'),
-                        _buildWeeklyStatCard(
-                            'Best Day', _getBestDay(weeklyData), ''),
-                        _buildWeeklyStatCard('Streak',
-                            '${_calculateStreak(weeklyData)}', 'days'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CustomIconWidget(
+            iconName: 'trending_up',
+            color: AppTheme.lightTheme.primaryColor,
+            size: 48,
           ),
-        );
-      },
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> _getWeeklyData() async {
-    final today = DateTime.now();
-    final weeklyData = <Map<String, dynamic>>[];
-
-    for (int i = 6; i >= 0; i--) {
-      final date = today.subtract(Duration(days: i));
-      final dateKey =
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      final mealData = await _storageService.loadDailyNutrition(dateKey);
-      final calories = _calculateCaloriesFromMealData(mealData);
-
-      final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      final dayName = i == 0 ? 'Today' : dayNames[date.weekday - 1];
-
-      weeklyData.add({
-        'day': dayName,
-        'calories': calories,
-        'target': _targetCalories,
-        'date': dateKey,
-      });
-    }
-
-    return weeklyData;
-  }
-
-  int _calculateCaloriesFromMealData(
-      Map<String, List<Map<String, dynamic>>> mealData) {
-    int total = 0;
-    mealData.forEach((mealType, foods) {
-      for (var food in foods) {
-        final calories = food['calories'] as int? ?? 0;
-        final quantity = food['quantity'] as int? ?? 1;
-        total += calories * quantity;
-      }
-    });
-    return total;
-  }
-
-  String _calculateWeeklyAverage(List<Map<String, dynamic>> weeklyData) {
-    if (weeklyData.isEmpty) return '0';
-    final total =
-        weeklyData.fold<int>(0, (sum, data) => sum + (data['calories'] as int));
-    return (total / weeklyData.length).round().toString();
-  }
-
-  String _getBestDay(List<Map<String, dynamic>> weeklyData) {
-    if (weeklyData.isEmpty) return 'None';
-    final best = weeklyData.reduce(
-        (a, b) => (a['calories'] as int) > (b['calories'] as int) ? a : b);
-    return '${best['day']} (${best['calories']} cal)';
-  }
-
-  String _calculateStreak(List<Map<String, dynamic>> weeklyData) {
-    int streak = 0;
-    for (int i = weeklyData.length - 1; i >= 0; i--) {
-      final calories = weeklyData[i]['calories'] as int;
-      final target = weeklyData[i]['target'] as int;
-      if (calories >= target * 0.8) {
-        // 80% of target counts as success
-        streak++;
-      } else {
-        break;
-      }
-    }
-    return streak.toString();
-  }
-
-  Widget _buildWeeklyStatCard(String title, String value, String subtitle) {
-    return Expanded(
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 1.w),
-        padding: EdgeInsets.all(3.w),
-        decoration: BoxDecoration(
-          color: AppTheme.lightTheme.primaryColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Text(
-              title,
-              style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
+          SizedBox(height: 2.h),
+          Text(
+            'Weekly Analytics',
+            style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            SizedBox(height: 0.5.h),
-            Text(
-              value,
-              style: AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppTheme.lightTheme.primaryColor,
-              ),
-              textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 1.h),
+          Text(
+            'Coming soon - View your weekly nutrition trends',
+            style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
             ),
-            if (subtitle.isNotEmpty)
-              Text(
-                subtitle,
-                style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

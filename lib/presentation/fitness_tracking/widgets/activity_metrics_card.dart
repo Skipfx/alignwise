@@ -12,14 +12,14 @@ class ActivityMetricsCard extends StatelessWidget {
   final String icon;
 
   const ActivityMetricsCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.unit,
     required this.progress,
     required this.progressColor,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

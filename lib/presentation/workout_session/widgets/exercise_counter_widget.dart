@@ -12,14 +12,14 @@ class ExerciseCounterWidget extends StatelessWidget {
   final bool isTimeBased;
 
   const ExerciseCounterWidget({
-    Key? key,
+    super.key,
     required this.label,
     required this.currentValue,
     required this.targetValue,
     this.onIncrement,
     this.onDecrement,
     this.isTimeBased = false,
-  }) : super(key: key);
+  });
 
   String _formatValue(int value) {
     if (isTimeBased) {

@@ -12,14 +12,14 @@ class SessionCompletionWidget extends StatefulWidget {
   final VoidCallback onRestart;
 
   const SessionCompletionWidget({
-    Key? key,
+    super.key,
     required this.sessionTitle,
     required this.sessionDuration,
     required this.currentStreak,
     required this.totalSessions,
     required this.onContinue,
     required this.onRestart,
-  }) : super(key: key);
+  });
 
   @override
   State<SessionCompletionWidget> createState() =>

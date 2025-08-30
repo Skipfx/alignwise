@@ -9,11 +9,11 @@ class MacroFoodSuggestions extends StatefulWidget {
   final double remainingFat;
 
   const MacroFoodSuggestions({
-    Key? key,
+    super.key,
     required this.remainingProtein,
     required this.remainingCarbs,
     required this.remainingFat,
-  }) : super(key: key);
+  });
 
   @override
   State<MacroFoodSuggestions> createState() => _MacroFoodSuggestionsState();
@@ -404,7 +404,7 @@ class _MacroFoodSuggestionsState extends State<MacroFoodSuggestions> {
               ),
             ),
             Text(
-              'You\'ve reached your ${_selectedMacro} goal for today.',
+              'You\'ve reached your $_selectedMacro goal for today.',
               style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
                 color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
               ),

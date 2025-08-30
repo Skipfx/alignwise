@@ -7,9 +7,9 @@ class ProfileHeaderWidget extends StatelessWidget {
   final Map<String, dynamic> userData;
 
   const ProfileHeaderWidget({
-    Key? key,
+    super.key,
     required this.userData,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

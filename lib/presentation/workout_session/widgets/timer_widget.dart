@@ -13,12 +13,12 @@ class TimerWidget extends StatefulWidget {
   final VoidCallback? onTimerTick;
 
   const TimerWidget({
-    Key? key,
+    super.key,
     required this.initialSeconds,
     this.isActive = false,
     this.onTimerComplete,
     this.onTimerTick,
-  }) : super(key: key);
+  });
 
   @override
   State<TimerWidget> createState() => _TimerWidgetState();
@@ -115,7 +115,7 @@ class _TimerWidgetState extends State<TimerWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 40.w,
       height: 40.w,
       child: Stack(

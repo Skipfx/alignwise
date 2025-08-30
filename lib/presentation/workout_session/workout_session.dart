@@ -12,7 +12,7 @@ import './widgets/timer_widget.dart';
 import './widgets/workout_metrics_widget.dart';
 
 class WorkoutSession extends StatefulWidget {
-  const WorkoutSession({Key? key}) : super(key: key);
+  const WorkoutSession({super.key});
 
   @override
   State<WorkoutSession> createState() => _WorkoutSessionState();
@@ -725,8 +725,9 @@ class _WorkoutSessionState extends State<WorkoutSession>
     if (_isRestPeriod) return 'RESTING...';
     if (!_isExerciseActive && !_isWorkoutActive) return 'START EXERCISE';
     if (_isExerciseActive) return 'PAUSE EXERCISE';
-    if (_currentExerciseIndex == workoutExercises.length - 1)
+    if (_currentExerciseIndex == workoutExercises.length - 1) {
       return 'FINISH WORKOUT';
+    }
     return 'NEXT EXERCISE';
   }
 
@@ -741,8 +742,9 @@ class _WorkoutSessionState extends State<WorkoutSession>
   Color _getActionButtonColor() {
     if (_isRestPeriod) return AppTheme.lightTheme.colorScheme.outline;
     if (_isExerciseActive) return AppTheme.lightTheme.colorScheme.secondary;
-    if (_currentExerciseIndex == workoutExercises.length - 1)
+    if (_currentExerciseIndex == workoutExercises.length - 1) {
       return AppTheme.lightTheme.colorScheme.tertiary;
+    }
     return AppTheme.lightTheme.primaryColor;
   }
 
@@ -750,8 +752,9 @@ class _WorkoutSessionState extends State<WorkoutSession>
     if (_isRestPeriod) return null;
     if (!_isExerciseActive && !_isWorkoutActive) return _startExercise;
     if (_isExerciseActive) return _pauseExercise;
-    if (_currentExerciseIndex == workoutExercises.length - 1)
+    if (_currentExerciseIndex == workoutExercises.length - 1) {
       return _finishWorkout;
+    }
     return _nextExercise;
   }
 }

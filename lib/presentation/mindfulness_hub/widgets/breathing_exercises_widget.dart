@@ -8,10 +8,10 @@ class BreathingExercisesWidget extends StatefulWidget {
   final Function(Map<String, dynamic> exercise, int duration) onExerciseStart;
 
   const BreathingExercisesWidget({
-    Key? key,
+    super.key,
     required this.exercises,
     required this.onExerciseStart,
-  }) : super(key: key);
+  });
 
   @override
   State<BreathingExercisesWidget> createState() =>

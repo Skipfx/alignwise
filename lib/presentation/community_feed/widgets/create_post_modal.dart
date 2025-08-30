@@ -9,9 +9,9 @@ class CreatePostModal extends StatefulWidget {
   final VoidCallback onPostCreated;
 
   const CreatePostModal({
-    Key? key,
+    super.key,
     required this.onPostCreated,
-  }) : super(key: key);
+  });
 
   @override
   State<CreatePostModal> createState() => _CreatePostModalState();
@@ -274,7 +274,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
           ]),
         if (_selectedImages.isNotEmpty) ...[
           SizedBox(height: 2.w),
-          Container(
+          SizedBox(
             height: 20.h,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,

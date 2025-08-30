@@ -15,7 +15,7 @@ class CalorieProgressWidget extends StatelessWidget {
   final double targetFat;
 
   const CalorieProgressWidget({
-    Key? key,
+    super.key,
     required this.consumedCalories,
     required this.targetCalories,
     required this.consumedProtein,
@@ -24,7 +24,7 @@ class CalorieProgressWidget extends StatelessWidget {
     required this.targetCarbs,
     required this.consumedFat,
     required this.targetFat,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

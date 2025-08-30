@@ -1,7 +1,7 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/app_export.dart';
 import '../../../theme/app_theme.dart';
@@ -11,40 +11,63 @@ class DailyProgressRing extends StatefulWidget {
   final VoidCallback? onTap;
 
   const DailyProgressRing({
-    Key? key,
+    super.key,
     required this.wellnessScore,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<DailyProgressRing> createState() => _DailyProgressRingState();
 }
 
 class _DailyProgressRingState extends State<DailyProgressRing>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+    with TickerProviderStateMixin {
+  late AnimationController _progressAnimationController;
+  late AnimationController _pulseAnimationController;
   late Animation<double> _progressAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _progressAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _pulseAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+
     _progressAnimation = Tween<double>(
       begin: 0.0,
       end: widget.wellnessScore / 100,
     ).animate(CurvedAnimation(
-      parent: _animationController,
+      parent: _progressAnimationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: _pulseAnimationController,
       curve: Curves.easeInOut,
     ));
-    _animationController.forward();
+
+    _progressAnimationController.forward();
+    _pulseAnimationController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _progressAnimationController.dispose();
+    _pulseAnimationController.dispose();
     super.dispose();
   }
 
@@ -52,129 +75,118 @@ class _DailyProgressRingState extends State<DailyProgressRing>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onTap,
-      child: Container(
-        width: 45.w,
-        height: 45.w,
-        padding: EdgeInsets.all(3.w),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppTheme.lightTheme.colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Background circle
-            Container(
-              width: double.infinity,
-              height: double.infinity,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_progressAnimation, _pulseAnimation]),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation.value,
+            child: Container(
+              width: 45.w,
+              height: 45.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.lightTheme.colorScheme.surface
-                    .withValues(alpha: 0.3),
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accentMint.withValues(alpha: 0.1),
+                    AppTheme.lightMint.withValues(alpha: 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Background ring
+                  SizedBox(
+                    width: 40.w,
+                    height: 40.w,
+                    child: CircularProgressIndicator(
+                      value: 1.0,
+                      strokeWidth: 6,
+                      backgroundColor:
+                          AppTheme.lightMint.withValues(alpha: 0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppTheme.lightMint.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
+                  // Progress ring with gradient effect
+                  SizedBox(
+                    width: 40.w,
+                    height: 40.w,
+                    child: CircularProgressIndicator(
+                      value: _progressAnimation.value,
+                      strokeWidth: 6,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getProgressColor(widget.wellnessScore),
+                      ),
+                    ),
+                  ),
+                  // Inner content
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${widget.wellnessScore.toInt()}%',
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      SizedBox(height: 0.5.h),
+                      Text(
+                        'Wellness Score',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.darkGrey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                  // Glow effect for high scores
+                  if (widget.wellnessScore >= 80)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              AppTheme.accentMint.withValues(alpha: 0.1),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            // Animated progress ring
-            AnimatedBuilder(
-              animation: _progressAnimation,
-              builder: (context, child) {
-                return CustomPaint(
-                  size: Size(40.w, 40.w),
-                  painter: ProgressRingPainter(
-                    progress: _progressAnimation.value,
-                    strokeWidth: 1.5.w,
-                    backgroundColor: AppTheme.lightTheme.colorScheme.outline
-                        .withValues(alpha: 0.2),
-                    progressColor: _getProgressColor(widget.wellnessScore),
-                  ),
-                );
-              },
-            ),
-            // Center content
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${widget.wellnessScore.toInt()}%',
-                  style: AppTheme.lightTheme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.lightTheme.colorScheme.primary,
-                  ),
-                ),
-                SizedBox(height: 0.5.h),
-                Text(
-                  'Wellness Score',
-                  style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   Color _getProgressColor(double score) {
-    if (score >= 80) return AppTheme.lightTheme.colorScheme.tertiary;
-    if (score >= 60) return AppTheme.lightTheme.colorScheme.secondary;
-    if (score >= 40) return const Color(0xFFFAAD14);
-    return AppTheme.lightTheme.colorScheme.error;
+    if (score >= 80) {
+      return AppTheme.accentMint; // Excellent - bright mint
+    } else if (score >= 60) {
+      return AppTheme.primaryBlue; // Good - primary blue
+    } else if (score >= 40) {
+      return const Color(0xFFF39C12); // Fair - orange
+    } else {
+      return AppTheme.errorLight; // Needs improvement - red
+    }
   }
-}
-
-class ProgressRingPainter extends CustomPainter {
-  final double progress;
-  final double strokeWidth;
-  final Color backgroundColor;
-  final Color progressColor;
-
-  ProgressRingPainter({
-    required this.progress,
-    required this.strokeWidth,
-    required this.backgroundColor,
-    required this.progressColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-
-    // Background circle
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, radius, backgroundPaint);
-
-    // Progress arc
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final sweepAngle = 2 * math.pi * progress;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

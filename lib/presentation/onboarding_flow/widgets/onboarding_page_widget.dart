@@ -10,12 +10,12 @@ class OnboardingPageWidget extends StatelessWidget {
   final Widget? animationWidget;
 
   const OnboardingPageWidget({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.imageUrl,
     this.animationWidget,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

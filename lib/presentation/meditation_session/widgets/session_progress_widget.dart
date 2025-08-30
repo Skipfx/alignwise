@@ -11,12 +11,12 @@ class SessionProgressWidget extends StatelessWidget {
   final String instructorName;
 
   const SessionProgressWidget({
-    Key? key,
+    super.key,
     required this.totalDuration,
     required this.remainingTime,
     required this.sessionTitle,
     required this.instructorName,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class SessionProgressWidget extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         SizedBox(height: 4.h),
-        Container(
+        SizedBox(
           width: 60.w,
           height: 60.w,
           child: Stack(

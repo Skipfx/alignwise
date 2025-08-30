@@ -4,7 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../../core/app_export.dart';
 
 class WorkoutAnimationWidget extends StatefulWidget {
-  const WorkoutAnimationWidget({Key? key}) : super(key: key);
+  const WorkoutAnimationWidget({super.key});
 
   @override
   State<WorkoutAnimationWidget> createState() => _WorkoutAnimationWidgetState();

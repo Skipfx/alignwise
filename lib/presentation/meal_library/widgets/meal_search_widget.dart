@@ -8,10 +8,10 @@ class MealSearchWidget extends StatelessWidget {
   final Function(String) onSearchChanged;
 
   const MealSearchWidget({
-    Key? key,
+    super.key,
     required this.searchController,
     required this.onSearchChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

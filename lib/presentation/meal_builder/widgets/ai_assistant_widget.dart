@@ -14,7 +14,7 @@ class AiAssistantWidget extends StatefulWidget {
   final Function(bool) onGeneratingChanged;
 
   const AiAssistantWidget({
-    Key? key,
+    super.key,
     required this.geminiService,
     required this.mealType,
     required this.onMealGenerated,
@@ -22,7 +22,7 @@ class AiAssistantWidget extends StatefulWidget {
     required this.aiGeneratedMeal,
     required this.isGenerating,
     required this.onGeneratingChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<AiAssistantWidget> createState() => _AiAssistantWidgetState();

@@ -14,7 +14,7 @@ class TeamChallengeCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const TeamChallengeCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.teamName,
     required this.teamMembers,
@@ -23,7 +23,7 @@ class TeamChallengeCard extends StatelessWidget {
     required this.totalTeams,
     required this.imageUrl,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

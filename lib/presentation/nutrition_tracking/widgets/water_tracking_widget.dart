@@ -10,12 +10,12 @@ class WaterTrackingWidget extends StatelessWidget {
   final VoidCallback onRemoveGlass;
 
   const WaterTrackingWidget({
-    Key? key,
+    super.key,
     required this.currentGlasses,
     required this.targetGlasses,
     required this.onAddGlass,
     required this.onRemoveGlass,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

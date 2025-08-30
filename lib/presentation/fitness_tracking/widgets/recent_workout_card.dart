@@ -10,12 +10,12 @@ class RecentWorkoutCard extends StatelessWidget {
   final VoidCallback onShare;
 
   const RecentWorkoutCard({
-    Key? key,
+    super.key,
     required this.workout,
     required this.onTap,
     required this.onRepeat,
     required this.onShare,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

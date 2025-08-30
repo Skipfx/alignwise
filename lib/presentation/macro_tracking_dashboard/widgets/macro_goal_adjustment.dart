@@ -9,11 +9,11 @@ class MacroGoalAdjustment extends StatefulWidget {
   final Function(String) onGoalChanged;
 
   const MacroGoalAdjustment({
-    Key? key,
+    super.key,
     required this.currentGoal,
     required this.macroPresets,
     required this.onGoalChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<MacroGoalAdjustment> createState() => _MacroGoalAdjustmentState();

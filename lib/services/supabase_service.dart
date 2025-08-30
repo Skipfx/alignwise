@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseService {
@@ -21,39 +22,140 @@ class SupabaseService {
 
   static Future<void> initialize(
       String supabaseUrl, String supabaseAnonKey) async {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-      debug: false,
-    );
-    _client = Supabase.instance.client;
+    try {
+      // Initialize Supabase with proper configuration including redirect URLs
+      await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseAnonKey,
+          authOptions: FlutterAuthClientOptions(
+            authFlowType: AuthFlowType.pkce,
+            // Configure redirect URLs for email verification and password reset
+          ),
+          realtimeClientOptions:
+              const RealtimeClientOptions(logLevel: RealtimeLogLevel.info),
+          storageOptions: const StorageClientOptions(retryAttempts: 10));
+      _client = Supabase.instance.client;
+      debugPrint('✅ SupabaseService initialized successfully');
+    } catch (error) {
+      debugPrint('❌ SupabaseService initialization failed: $error');
+      throw Exception('SupabaseService initialization failed: $error');
+    }
   }
 
-  // Authentication Methods
+  // Authentication Helper Methods
+  bool get isSignedIn => _client?.auth.currentUser != null;
+
+  User? get currentUser => _client?.auth.currentUser;
+
+  // Enhanced password reset with proper redirect URL
+  Future<void> resetPassword(String email) async {
+    try {
+      await _client!.auth.resetPasswordForEmail(email,
+          redirectTo: kIsWeb
+              ? 'https://your-app-domain.com/auth/reset-password'
+              : 'io.supabase.alignwise://auth/reset-password');
+    } catch (error) {
+      throw Exception('Password reset failed: $error');
+    }
+  }
+
+  // Enhanced sign up with email confirmation redirect
   Future<AuthResponse> signUp(
       String email, String password, String fullName) async {
     try {
       final response = await _client!.auth.signUp(
-        email: email,
-        password: password,
-        data: {
-          'full_name': fullName,
-          'role': 'free',
-        },
-      );
+          email: email,
+          password: password,
+          data: {
+            'full_name': fullName,
+            'role': 'free',
+          },
+          emailRedirectTo: kIsWeb
+              ? 'https://your-app-domain.com/auth/confirm'
+              : 'io.supabase.alignwise://auth/confirm');
+
+      if (response.user != null && response.user!.emailConfirmedAt == null) {
+        debugPrint(
+            '📧 Email confirmation required for: ${response.user!.email}');
+      }
+
+      if (response.user != null) {
+        // Create user profile
+        await _createUserProfile(response.user!, fullName: fullName);
+      }
+
       return response;
     } catch (error) {
       throw Exception('Sign-up failed: $error');
     }
   }
 
+  // Enhanced sign in with email verification check
   Future<AuthResponse> signIn(String email, String password) async {
     try {
-      final response = await _client!.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      final response = await _client!.auth
+          .signInWithPassword(email: email, password: password);
+
+      // Check if email is confirmed
+      if (response.user != null && response.user!.emailConfirmedAt == null) {
+        throw Exception(
+            'Email not verified. Please check your email and click the verification link.');
+      }
+
       return response;
+    } catch (error) {
+      throw Exception('Sign-in failed: $error');
+    }
+  }
+
+  // Resend email confirmation
+  Future<void> resendEmailConfirmation(String email) async {
+    try {
+      await _client!.auth.resend(
+          type: OtpType.signup,
+          email: email,
+          emailRedirectTo: kIsWeb
+              ? 'https://your-app-domain.com/auth/confirm'
+              : 'io.supabase.alignwise://auth/confirm');
+      debugPrint('✅ Email confirmation resent');
+    } catch (error) {
+      throw Exception('Failed to resend confirmation: $error');
+    }
+  }
+
+  // Check if user's email is verified
+  bool get isEmailVerified =>
+      _client?.auth.currentUser?.emailConfirmedAt != null;
+
+  // Authentication Methods
+  Future<AuthResponse?> signInWithGoogle() async {
+    try {
+      final success = await _client!.auth.signInWithOAuth(OAuthProvider.google);
+      if (success) {
+        // Return a mock AuthResponse-like structure since OAuth returns bool
+        return AuthResponse(
+          session: _client!.auth.currentSession,
+          user: _client!.auth.currentUser,
+        );
+      }
+      return null;
+    } catch (error) {
+      throw Exception('Sign-in failed: $error');
+    }
+  }
+
+  Future<AuthResponse?> signInWithFacebook() async {
+    try {
+      final success =
+          await _client!.auth.signInWithOAuth(OAuthProvider.facebook);
+      if (success) {
+        // Return a mock AuthResponse-like structure since OAuth returns bool
+        return AuthResponse(
+          session: _client!.auth.currentSession,
+          user: _client!.auth.currentUser,
+        );
+      }
+      return null;
     } catch (error) {
       throw Exception('Sign-in failed: $error');
     }
@@ -67,25 +169,41 @@ class SupabaseService {
     }
   }
 
-  User? get currentUser => _client!.auth.currentUser;
+  // Create user profile in database
+  Future<void> _createUserProfile(User user, {String? fullName}) async {
+    try {
+      await _client!.from('user_profiles').insert({
+        'id': user.id,
+        'email': user.email,
+        'full_name': fullName ?? user.userMetadata?['full_name'] ?? '',
+        'avatar_url': user.userMetadata?['avatar_url'],
+        'role': 'free',
+        'is_active': true,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      // Profile might already exist, which is fine
+      debugPrint('Profile creation note: $e');
+    }
+  }
 
   // Nutrition Tracking Methods
   Future<List<dynamic>> getMeals({String? mealType, DateTime? date}) async {
     try {
-      var query =
-          _client!.from('meals').select().order('meal_time', ascending: false);
+      var query = _client!.from('meals').select();
 
       if (mealType != null) {
-        query = query.filter('meal_type', 'eq', mealType);
+        query = query.eq('meal_type', mealType);
       }
 
       if (date != null) {
         final dateStr =
             '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        query = query.filter('meal_date', 'eq', dateStr);
+        query = query.eq('meal_date', dateStr);
       }
 
-      return await query;
+      return await query.order('meal_time', ascending: false);
     } catch (error) {
       throw Exception('Failed to get meals: $error');
     }
@@ -94,26 +212,47 @@ class SupabaseService {
   Future<Map<String, dynamic>> getDailyNutritionSummary(
       {DateTime? date}) async {
     try {
-      final dateStr = date != null
-          ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
-          : null;
+      final params = <String, dynamic>{};
 
-      final response = await _client!.rpc(
-        'get_daily_nutrition_summary',
-        params: dateStr != null ? {'target_date': dateStr} : {},
-      );
+      if (date != null) {
+        final dateStr =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        params['target_date'] = dateStr;
+      }
 
-      return response.first ??
-          {
-            'total_calories': 0,
-            'total_protein': 0.0,
-            'total_carbs': 0.0,
-            'total_fat': 0.0,
-            'total_fiber': 0.0,
-            'meal_count': 0,
-          };
+      final response =
+          await _client!.rpc('get_daily_nutrition_summary', params: params);
+
+      if (response != null && response is List && response.isNotEmpty) {
+        return response.first ??
+            {
+              'total_calories': 0,
+              'total_protein': 0.0,
+              'total_carbs': 0.0,
+              'total_fat': 0.0,
+              'total_fiber': 0.0,
+              'meal_count': 0,
+            };
+      }
+
+      return {
+        'total_calories': 0,
+        'total_protein': 0.0,
+        'total_carbs': 0.0,
+        'total_fat': 0.0,
+        'total_fiber': 0.0,
+        'meal_count': 0,
+      };
     } catch (error) {
-      throw Exception('Failed to get nutrition summary: $error');
+      debugPrint('Failed to get nutrition summary: $error');
+      return {
+        'total_calories': 0,
+        'total_protein': 0.0,
+        'total_carbs': 0.0,
+        'total_fat': 0.0,
+        'total_fiber': 0.0,
+        'meal_count': 0,
+      };
     }
   }
 
@@ -168,22 +307,19 @@ class SupabaseService {
   // Fitness Tracking Methods
   Future<List<dynamic>> getWorkouts({String? status, DateTime? date}) async {
     try {
-      var query = _client!
-          .from('workouts')
-          .select()
-          .order('created_at', ascending: false);
+      var query = _client!.from('workouts').select();
 
       if (status != null) {
-        query = query.filter('status', 'eq', status);
+        query = query.eq('status', status);
       }
 
       if (date != null) {
         final dateStr =
             '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        query = query.filter('workout_date', 'eq', dateStr);
+        query = query.eq('workout_date', dateStr);
       }
 
-      return await query;
+      return await query.order('created_at', ascending: false);
     } catch (error) {
       throw Exception('Failed to get workouts: $error');
     }
@@ -192,25 +328,41 @@ class SupabaseService {
   Future<Map<String, dynamic>> getWeeklyWorkoutStats(
       {DateTime? startDate}) async {
     try {
-      final start =
-          startDate ?? DateTime.now().subtract(const Duration(days: 7));
-      final startStr =
-          '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
+      final params = <String, dynamic>{};
 
-      final response = await _client!.rpc(
-        'get_weekly_workout_stats',
-        params: {'start_date': startStr},
-      );
+      if (startDate != null) {
+        final startStr =
+            '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+        params['start_date'] = startStr;
+      }
 
-      return response.first ??
-          {
-            'total_workouts': 0,
-            'total_minutes': 0,
-            'total_calories': 0,
-            'completion_rate': 0.0,
-          };
+      final response =
+          await _client!.rpc('get_weekly_workout_stats', params: params);
+
+      if (response != null && response is List && response.isNotEmpty) {
+        return response.first ??
+            {
+              'total_workouts': 0,
+              'total_minutes': 0,
+              'total_calories': 0,
+              'completion_rate': 0.0,
+            };
+      }
+
+      return {
+        'total_workouts': 0,
+        'total_minutes': 0,
+        'total_calories': 0,
+        'completion_rate': 0.0,
+      };
     } catch (error) {
-      throw Exception('Failed to get workout stats: $error');
+      debugPrint('Failed to get workout stats: $error');
+      return {
+        'total_workouts': 0,
+        'total_minutes': 0,
+        'total_calories': 0,
+        'completion_rate': 0.0,
+      };
     }
   }
 
@@ -274,21 +426,19 @@ class SupabaseService {
   Future<List<dynamic>> getFitnessPrograms(
       {String? difficulty, bool? isPremium}) async {
     try {
-      var query = _client!
-          .from('fitness_programs')
-          .select()
-          .filter('status', 'eq', 'active')
-          .order('created_at', ascending: false);
+      var query = _client!.from('fitness_programs').select();
+
+      query = query.eq('status', 'active');
 
       if (difficulty != null) {
-        query = query.filter('difficulty', 'eq', difficulty);
+        query = query.eq('difficulty', difficulty);
       }
 
       if (isPremium != null) {
-        query = query.filter('is_premium', 'eq', isPremium);
+        query = query.eq('is_premium', isPremium);
       }
 
-      return await query;
+      return await query.order('created_at', ascending: false);
     } catch (error) {
       throw Exception('Failed to get fitness programs: $error');
     }
@@ -315,7 +465,8 @@ class SupabaseService {
       final response = await _client!.rpc('get_user_program_progress');
       return response ?? [];
     } catch (error) {
-      throw Exception('Failed to get program progress: $error');
+      debugPrint('Failed to get program progress: $error');
+      return [];
     }
   }
 
@@ -323,22 +474,19 @@ class SupabaseService {
   Future<List<dynamic>> getMeditations(
       {String? meditationType, DateTime? date}) async {
     try {
-      var query = _client!
-          .from('meditations')
-          .select()
-          .order('created_at', ascending: false);
+      var query = _client!.from('meditations').select();
 
       if (meditationType != null) {
-        query = query.filter('meditation_type', 'eq', meditationType);
+        query = query.eq('meditation_type', meditationType);
       }
 
       if (date != null) {
         final dateStr =
             '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        query = query.filter('session_date', 'eq', dateStr);
+        query = query.eq('session_date', dateStr);
       }
 
-      return await query;
+      return await query.order('created_at', ascending: false);
     } catch (error) {
       throw Exception('Failed to get meditations: $error');
     }
@@ -416,7 +564,7 @@ class SupabaseService {
     try {
       var query = _client!.from('user_achievements').select('''
             *,
-            achievement_definitions!inner (
+            achievement_definitions (
               title,
               description,
               badge_rarity,
@@ -430,7 +578,8 @@ class SupabaseService {
         query = query.eq('is_completed', isCompleted);
       }
 
-      return await query.order('created_at', ascending: false);
+      final result = await query.order('created_at', ascending: false);
+      return result;
     } catch (error) {
       throw Exception('Failed to get achievements: $error');
     }
@@ -439,16 +588,34 @@ class SupabaseService {
   Future<Map<String, dynamic>> getAchievementSummary() async {
     try {
       final response = await _client!.rpc('get_user_achievement_summary');
-      return response.first ??
-          {
-            'total_achievements': 0,
-            'completed_achievements': 0,
-            'completion_percentage': 0.0,
-            'total_points': 0,
-            'recent_achievements': [],
-          };
+
+      if (response != null && response is List && response.isNotEmpty) {
+        return response.first ??
+            {
+              'total_achievements': 0,
+              'completed_achievements': 0,
+              'completion_percentage': 0.0,
+              'total_points': 0,
+              'recent_achievements': [],
+            };
+      }
+
+      return {
+        'total_achievements': 0,
+        'completed_achievements': 0,
+        'completion_percentage': 0.0,
+        'total_points': 0,
+        'recent_achievements': [],
+      };
     } catch (error) {
-      throw Exception('Failed to get achievement summary: $error');
+      debugPrint('Failed to get achievement summary: $error');
+      return {
+        'total_achievements': 0,
+        'completed_achievements': 0,
+        'completion_percentage': 0.0,
+        'total_points': 0,
+        'recent_achievements': [],
+      };
     }
   }
 
@@ -456,16 +623,14 @@ class SupabaseService {
   Future<List<dynamic>> getCommunityFeed(
       {int limit = 20, int offset = 0}) async {
     try {
-      final response = await _client!.rpc(
-        'get_community_feed',
-        params: {
-          'feed_limit': limit,
-          'offset_count': offset,
-        },
-      );
+      final response = await _client!.rpc('get_community_feed', params: {
+        'feed_limit': limit,
+        'offset_count': offset,
+      });
       return response ?? [];
     } catch (error) {
-      throw Exception('Failed to get community feed: $error');
+      debugPrint('Failed to get community feed: $error');
+      return [];
     }
   }
 
@@ -532,18 +697,15 @@ class SupabaseService {
   // Water Intake Methods
   Future<List<dynamic>> getWaterIntake({DateTime? date}) async {
     try {
-      var query = _client!
-          .from('water_intake')
-          .select()
-          .order('intake_time', ascending: false);
+      var query = _client!.from('water_intake').select();
 
       if (date != null) {
         final dateStr =
             '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        query = query.filter('intake_date', 'eq', dateStr);
+        query = query.eq('intake_date', dateStr);
       }
 
-      return await query;
+      return await query.order('intake_time', ascending: false);
     } catch (error) {
       throw Exception('Failed to get water intake: $error');
     }
@@ -690,10 +852,9 @@ class SupabaseService {
   RealtimeChannel subscribeToTable(
       String tableName, void Function(dynamic) callback) {
     return _client!.channel('public:$tableName').onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: tableName,
-          callback: callback,
-        );
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: tableName,
+        callback: callback);
   }
 }

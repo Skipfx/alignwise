@@ -4,7 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../../core/app_export.dart';
 
 class GamificationDemoWidget extends StatefulWidget {
-  const GamificationDemoWidget({Key? key}) : super(key: key);
+  const GamificationDemoWidget({super.key});
 
   @override
   State<GamificationDemoWidget> createState() => _GamificationDemoWidgetState();

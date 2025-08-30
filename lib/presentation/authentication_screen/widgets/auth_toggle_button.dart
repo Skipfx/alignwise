@@ -9,10 +9,10 @@ class AuthToggleButton extends StatelessWidget {
   final VoidCallback onToggle;
 
   const AuthToggleButton({
-    Key? key,
+    super.key,
     required this.isSignIn,
     required this.onToggle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

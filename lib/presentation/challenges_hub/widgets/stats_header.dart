@@ -10,12 +10,12 @@ class StatsHeader extends StatefulWidget {
   final int currentStreak;
 
   const StatsHeader({
-    Key? key,
+    super.key,
     required this.activeChallenges,
     required this.totalPoints,
     required this.completedChallenges,
     required this.currentStreak,
-  }) : super(key: key);
+  });
 
   @override
   State<StatsHeader> createState() => _StatsHeaderState();
@@ -134,7 +134,7 @@ class _StatsHeaderState extends State<StatsHeader>
                     animation: _pointsAnimation,
                     builder: (context, child) {
                       return Text(
-                        '${_formatNumber(_pointsAnimation.value)}',
+                        _formatNumber(_pointsAnimation.value),
                         style: AppTheme.lightTheme.textTheme.headlineMedium
                             ?.copyWith(
                           color: Colors.white,

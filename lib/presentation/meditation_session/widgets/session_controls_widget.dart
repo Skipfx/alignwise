@@ -13,14 +13,14 @@ class SessionControlsWidget extends StatelessWidget {
   final Function(double) onVolumeChanged;
 
   const SessionControlsWidget({
-    Key? key,
+    super.key,
     required this.isPlaying,
     required this.volume,
     required this.onPlayPause,
     required this.onSkipBackward,
     required this.onSkipForward,
     required this.onVolumeChanged,
-  }) : super(key: key);
+  });
 
   void _triggerHapticFeedback() {
     HapticFeedback.lightImpact();

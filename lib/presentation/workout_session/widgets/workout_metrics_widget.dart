@@ -11,13 +11,13 @@ class WorkoutMetricsWidget extends StatelessWidget {
   final int totalExercises;
 
   const WorkoutMetricsWidget({
-    Key? key,
+    super.key,
     required this.elapsedTime,
     required this.caloriesBurned,
     required this.heartRate,
     required this.completedExercises,
     required this.totalExercises,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

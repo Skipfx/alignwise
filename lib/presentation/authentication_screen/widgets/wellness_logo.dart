@@ -4,7 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../../core/app_export.dart';
 
 class WellnessLogo extends StatelessWidget {
-  const WellnessLogo({Key? key}) : super(key: key);
+  const WellnessLogo({super.key});
 
   @override
   Widget build(BuildContext context) {

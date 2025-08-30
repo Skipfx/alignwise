@@ -11,12 +11,12 @@ class ActivityFeedCard extends StatelessWidget {
   final VoidCallback onShare;
 
   const ActivityFeedCard({
-    Key? key,
+    super.key,
     required this.activity,
     required this.onReaction,
     required this.onComment,
     required this.onShare,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

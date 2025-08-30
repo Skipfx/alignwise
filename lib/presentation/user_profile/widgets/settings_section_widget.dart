@@ -9,11 +9,11 @@ class SettingsSectionWidget extends StatefulWidget {
   final Function(String, dynamic)? onSettingChanged;
 
   const SettingsSectionWidget({
-    Key? key,
+    super.key,
     required this.title,
     required this.items,
     this.onSettingChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsSectionWidget> createState() => _SettingsSectionWidgetState();

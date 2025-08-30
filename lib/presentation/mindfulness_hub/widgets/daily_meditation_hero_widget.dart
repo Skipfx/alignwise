@@ -8,10 +8,10 @@ class DailyMeditationHeroWidget extends StatelessWidget {
   final Function(int duration) onDurationSelected;
 
   const DailyMeditationHeroWidget({
-    Key? key,
+    super.key,
     required this.dailyRecommendation,
     required this.onDurationSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

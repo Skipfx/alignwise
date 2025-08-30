@@ -105,7 +105,7 @@ class AchievementOverviewHeaderWidget extends StatelessWidget {
           Row(
             children: [
               // Achievement Progress Circle
-              Container(
+              SizedBox(
                 width: 80,
                 height: 80,
                 child: Stack(

@@ -4,52 +4,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
-import './routes/app_routes.dart';
 import './services/supabase_service.dart';
 import 'core/app_export.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment configuration
-  Map<String, dynamic> envConfig = {};
+  // Load environment variables
+  String envString = await rootBundle.loadString('env.json');
+  Map<String, dynamic> env = json.decode(envString);
+
+  // Initialize Supabase once
   try {
-    final String envString = await rootBundle.loadString('env.json');
-    envConfig = json.decode(envString);
+    await SupabaseService.initialize(
+      env['SUPABASE_URL'] ?? '',
+      env['SUPABASE_ANON_KEY'] ?? '',
+    );
   } catch (e) {
-    debugPrint('Warning: Could not load env.json file: $e');
+    debugPrint('Failed to initialize Supabase: $e');
   }
 
-  // Initialize Supabase
-  try {
-    final supabaseUrl = envConfig['SUPABASE_URL'] ?? '';
-    final supabaseAnonKey = envConfig['SUPABASE_ANON_KEY'] ?? '';
-
-    if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
-      await SupabaseService.initialize(supabaseUrl, supabaseAnonKey);
-      debugPrint('Supabase initialized successfully');
-    } else {
-      debugPrint('Warning: Supabase configuration not found in env.json');
-    }
-  } catch (e) {
-    debugPrint('Error initializing Supabase: $e');
-  }
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Sizer(builder: (context, orientation, deviceType) {
-      return MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: const TextScaler.linear(1.0)),
-          child: MaterialApp(
-              theme: ThemeData(),
-              title: 'AlignWise',
-              debugShowCheckedModeBanner: false,
-              routes: AppRoutes.routes));
-    });
+    return Sizer(
+      builder: (context, orientation, deviceType) {
+        return MaterialApp(
+          title: 'AlignWise',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          initialRoute: AppRoutes.splash,
+          routes: AppRoutes.routes,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(1.0)),
+              child: child!,
+            );
+          },
+        );
+      },
+    );
   }
 }

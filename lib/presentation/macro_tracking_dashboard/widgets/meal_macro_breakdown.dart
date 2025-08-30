@@ -8,10 +8,10 @@ class MealMacroBreakdown extends StatefulWidget {
   final Function(String) onMealTap;
 
   const MealMacroBreakdown({
-    Key? key,
+    super.key,
     required this.mealData,
     required this.onMealTap,
-  }) : super(key: key);
+  });
 
   @override
   State<MealMacroBreakdown> createState() => _MealMacroBreakdownState();

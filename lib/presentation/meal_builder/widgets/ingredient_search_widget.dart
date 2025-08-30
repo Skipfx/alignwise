@@ -8,10 +8,10 @@ class IngredientSearchWidget extends StatefulWidget {
   final Function(Map<String, dynamic>) onIngredientSelected;
 
   const IngredientSearchWidget({
-    Key? key,
+    super.key,
     required this.searchController,
     required this.onIngredientSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<IngredientSearchWidget> createState() => _IngredientSearchWidgetState();

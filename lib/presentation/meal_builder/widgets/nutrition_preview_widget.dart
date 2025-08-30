@@ -11,12 +11,12 @@ class NutritionPreviewWidget extends StatelessWidget {
   final int fat;
 
   const NutritionPreviewWidget({
-    Key? key,
+    super.key,
     required this.calories,
     required this.protein,
     required this.carbs,
     required this.fat,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -11,7 +11,7 @@ import './widgets/session_notes_widget.dart';
 import './widgets/session_progress_widget.dart';
 
 class MeditationSession extends StatefulWidget {
-  const MeditationSession({Key? key}) : super(key: key);
+  const MeditationSession({super.key});
 
   @override
   State<MeditationSession> createState() => _MeditationSessionState();
@@ -271,7 +271,7 @@ class _MeditationSessionState extends State<MeditationSession>
             builder: (context, child) {
               return Transform.scale(
                 scale: _backgroundAnimation.value,
-                child: Container(
+                child: SizedBox(
                   width: double.infinity,
                   height: double.infinity,
                   child: CustomImageWidget(

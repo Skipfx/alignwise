@@ -10,12 +10,12 @@ class ExerciseVideoWidget extends StatefulWidget {
   final VoidCallback? onPlayPause;
 
   const ExerciseVideoWidget({
-    Key? key,
+    super.key,
     required this.videoUrl,
     required this.exerciseName,
     this.isPlaying = false,
     this.onPlayPause,
-  }) : super(key: key);
+  });
 
   @override
   State<ExerciseVideoWidget> createState() => _ExerciseVideoWidgetState();

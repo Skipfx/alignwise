@@ -8,10 +8,10 @@ class MeditationCategoriesWidget extends StatelessWidget {
   final Function(Map<String, dynamic> category) onCategoryTap;
 
   const MeditationCategoriesWidget({
-    Key? key,
+    super.key,
     required this.categories,
     required this.onCategoryTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

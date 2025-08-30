@@ -46,58 +46,55 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	
-	<!-- Custom URL scheme for Supabase auth -->
+	<!-- URL Schemes for Social Authentication -->
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Custom URL scheme for Supabase auth callbacks -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.alignwise</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.alignwise</string>
+			</array>
+		</dict>
+		<!-- Google Sign-In URL scheme -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Replace with your Google Services client ID reversed -->
+				<string>com.googleusercontent.apps.YOUR_GOOGLE_CLIENT_ID</string>
+			</array>
+		</dict>
+		<!-- Facebook URL scheme -->
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>facebook</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fb[your_facebook_app_id]</string>
-			</array>
-		</dict>
-		<!-- Add Supabase URL scheme -->
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>supabase</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>alignwise</string>
+				<!-- Replace YOUR_FACEBOOK_APP_ID with your actual Facebook App ID -->
+				<string>fbYOUR_FACEBOOK_APP_ID</string>
 			</array>
 		</dict>
 	</array>
 	
-	<!-- Queries for external apps -->
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>https</string>
-		<string>http</string>
-	</array>
-	
-	<!-- Add Facebook Configuration -->
+	<!-- Facebook Configuration -->
 	<key>FacebookAppID</key>
-	<string>[your_facebook_app_id]</string>
+	<string>YOUR_FACEBOOK_APP_ID</string>
 	<key>FacebookClientToken</key>
-	<string>[your_facebook_client_token]</string>
+	<string>YOUR_FACEBOOK_CLIENT_TOKEN</string>
 	<key>FacebookDisplayName</key>
 	<string>AlignWise</string>
 	
-	<!-- Add LSApplicationQueriesSchemes -->
+	<!-- LSApplicationQueriesSchemes for social login apps -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<string>googlegmail</string>
+		<string>googlemail</string>
+		<string>facebook</string>
 		<string>fbapi</string>
-		<string>fbapi20130214</string>
-		<string>fbapi20130410</string>
-		<string>fbapi20130702</string>
-		<string>fbapi20131010</string>
-		<string>fbapi20131219</string>
-		<string>fbapi20140410</string>
-		<string>fbapi20140116</string>
-		<string>fbapi20150313</string>
-		<string>fbapi20150629</string>
-		<string>fbapi20160328</string>
-		<string>fbauth</string>
 		<string>fb-messenger-share-api</string>
 		<string>fbauth2</string>
 		<string>fbshareextension</string>

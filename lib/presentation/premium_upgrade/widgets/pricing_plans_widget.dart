@@ -9,10 +9,10 @@ class PricingPlansWidget extends StatelessWidget {
   final ValueChanged<bool> onToggle;
 
   const PricingPlansWidget({
-    Key? key,
+    super.key,
     required this.isYearly,
     required this.onToggle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,20 +77,23 @@ class PricingPlansWidget extends StatelessWidget {
                   children: [
                     Text(
                       'Yearly',
-                      style:
-                          AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
-                        color: isYearly
-                            ? Colors.white
-                            : AppTheme.textSecondaryLight,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTheme.lightTheme.textTheme.titleMedium
+                          ?.copyWith(
+                            color:
+                                isYearly
+                                    ? Colors.white
+                                    : AppTheme.textSecondaryLight,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     Positioned(
                       top: -1.h,
                       right: 2.w,
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 2.w, vertical: 0.5.h),
+                          horizontal: 2.w,
+                          vertical: 0.5.h,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.successLight,
                           borderRadius: BorderRadius.circular(1.w),
@@ -99,9 +102,9 @@ class PricingPlansWidget extends StatelessWidget {
                           'SAVE 20%',
                           style: AppTheme.lightTheme.textTheme.labelSmall
                               ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ),
                     ),
@@ -128,26 +131,28 @@ class PricingPlansWidget extends StatelessWidget {
   Widget _buildPlanCard(bool isYearlyPlan) {
     final isSelected = isYearly == isYearlyPlan;
 
-    // Updated Australian dollar pricing
-    final price = isYearlyPlan
-        ? StripeService.getYearlyPrice() // AU$79.99
-        : StripeService.getMonthlyPrice(); // AU$9.99
+    // Updated pricing remains the same
+    final price =
+        isYearlyPlan
+            ? StripeService.getYearlyPrice()
+            : StripeService.getMonthlyPrice();
     final period = isYearlyPlan ? 'year' : 'month';
-    final monthlyEquivalent = isYearlyPlan
-        ? StripeService.getYearlyMonthlyEquivalent() // AU$6.67/month
-        : null;
+    final monthlyEquivalent =
+        isYearlyPlan ? StripeService.getYearlyMonthlyEquivalent() : null;
 
     return Container(
       padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
-        color: isSelected
-            ? AppTheme.primaryLight.withValues(alpha: 0.1)
-            : Colors.white,
+        color:
+            isSelected
+                ? AppTheme.primaryLight.withValues(alpha: 0.1)
+                : Colors.white,
         borderRadius: BorderRadius.circular(3.w),
         border: Border.all(
-          color: isSelected
-              ? AppTheme.primaryLight
-              : AppTheme.shadowLight.withValues(alpha: 0.2),
+          color:
+              isSelected
+                  ? AppTheme.primaryLight
+                  : AppTheme.shadowLight.withValues(alpha: 0.2),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [
@@ -194,9 +199,10 @@ class PricingPlansWidget extends StatelessWidget {
                   text: price,
                   style: AppTheme.lightTheme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? AppTheme.primaryLight
-                        : AppTheme.textPrimaryLight,
+                    color:
+                        isSelected
+                            ? AppTheme.primaryLight
+                            : AppTheme.textPrimaryLight,
                   ),
                 ),
                 TextSpan(
@@ -235,30 +241,31 @@ class PricingPlansWidget extends StatelessWidget {
     ];
 
     return Column(
-      children: features
-          .map((feature) => Padding(
-                padding: EdgeInsets.only(bottom: 0.5.h),
-                child: Row(
-                  children: [
-                    CustomIconWidget(
-                      iconName: 'check',
-                      color: AppTheme.successLight,
-                      size: 4.w,
-                    ),
-                    SizedBox(width: 2.w),
-                    Expanded(
-                      child: Text(
-                        feature,
-                        style:
-                            AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondaryLight,
+      children:
+          features
+              .map(
+                (feature) => Padding(
+                  padding: EdgeInsets.only(bottom: 0.5.h),
+                  child: Row(
+                    children: [
+                      CustomIconWidget(
+                        iconName: 'check',
+                        color: AppTheme.successLight,
+                        size: 4.w,
+                      ),
+                      SizedBox(width: 2.w),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: AppTheme.lightTheme.textTheme.bodySmall
+                              ?.copyWith(color: AppTheme.textSecondaryLight),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ))
-          .toList(),
+              )
+              .toList(),
     );
   }
 }

@@ -8,10 +8,10 @@ class FriendActivityHeader extends StatelessWidget {
   final VoidCallback onViewAllFriends;
 
   const FriendActivityHeader({
-    Key? key,
+    super.key,
     required this.friendCount,
     required this.onViewAllFriends,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -2,138 +2,140 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
-import '../../services/supabase_service.dart';
+import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-
-  final _supabaseService = SupabaseService.instance;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
-    _startSplashTimer();
+    _initializeApp();
   }
 
-  void _setupAnimations() {
-    _animationController = AnimationController(
-        duration: const Duration(milliseconds: 2000), vsync: this);
+  Future<void> _initializeApp() async {
+    try {
+      // Wait for a minimum splash duration
+      await Future.delayed(const Duration(seconds: 2));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.0, 0.6, curve: Curves.easeIn)));
+      if (!mounted) return;
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-        CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.2, 0.8, curve: Curves.easeOutBack)));
+      // Check authentication status
+      final authService = AuthService.instance;
 
-    _animationController.forward();
-  }
+      if (authService.isAuthenticated) {
+        // Ensure user profile exists in database
+        try {
+          final profile = await authService.getCurrentUserProfile();
+          if (profile == null) {
+            debugPrint(
+                '⚠️ User authenticated but no profile found, creating...');
+            // This will create the profile automatically in getCurrentUserProfile
+          }
+        } catch (e) {
+          debugPrint('⚠️ Profile check failed during splash: $e');
+          // Continue to dashboard anyway as fallback data will be used
+        }
 
-  void _startSplashTimer() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _navigateToNextScreen();
+        // User is logged in, go to dashboard
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboardHome);
+      } else {
+        // User is not logged in, check if they've seen onboarding
+        // For now, go directly to authentication
+        Navigator.pushReplacementNamed(context, AppRoutes.authentication);
       }
-    });
-  }
-
-  void _navigateToNextScreen() {
-    // Check authentication state
-    if (_supabaseService.isSignedIn) {
-      Navigator.pushReplacementNamed(context, '/dashboard-home');
-    } else {
-      Navigator.pushReplacementNamed(context, '/onboarding-flow');
+    } catch (e) {
+      debugPrint('❌ Splash screen initialization error: $e');
+      // On error, go to authentication screen
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.authentication);
+      }
     }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: AppTheme.lightTheme.colorScheme.primary,
-        body: Center(
-            child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // App Logo
-                          Container(
-                              width: 25.w,
-                              height: 25.w,
-                              padding: EdgeInsets.all(5.w),
-                              decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.1),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10)),
-                                  ]),
-                              child: CustomImageWidget(
-                                  imageUrl: 'assets/images/logo.png',
-                                  width: 15.w,
-                                  height: 15.w)),
+      body: Container(
+        width: 100.w,
+        height: 100.h,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).primaryColor,
+              Theme.of(context).primaryColor.withAlpha(204),
+            ],
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // App Logo
+            Container(
+              width: 120.w,
+              height: 120.w,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20.w),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(26),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  'AW',
+                  style: TextStyle(
+                    fontSize: 36.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 6.h),
 
-                          SizedBox(height: 4.h),
+            // App Name
+            Text(
+              'AlignWise',
+              style: TextStyle(
+                fontSize: 28.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 2.h),
 
-                          // App Name
-                          Text('AlignWise',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineLarge
-                                  ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2)),
+            // Tagline
+            Text(
+              'Your Wellness Journey Starts Here',
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: Colors.white.withAlpha(230),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8.h),
 
-                          SizedBox(height: 1.h),
-
-                          // Tagline
-                          Text('Your Personal Wellness Companion',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.9),
-                                      fontWeight: FontWeight.w400)),
-
-                          SizedBox(height: 8.h),
-
-                          // Loading Indicator
-                          SizedBox(
-                              width: 8.w,
-                              height: 8.w,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.3))),
-                        ])))));
+            // Loading indicator
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              strokeWidth: 2,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

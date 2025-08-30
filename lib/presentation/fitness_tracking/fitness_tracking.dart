@@ -9,7 +9,7 @@ import './widgets/recent_workout_card.dart';
 import './widgets/workout_creation_modal.dart';
 
 class FitnessTracking extends StatefulWidget {
-  const FitnessTracking({Key? key}) : super(key: key);
+  const FitnessTracking({super.key});
 
   @override
   State<FitnessTracking> createState() => _FitnessTrackingState();

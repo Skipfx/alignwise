@@ -6,10 +6,7 @@ import '../../../core/app_export.dart';
 class SubscriptionHeaderWidget extends StatelessWidget {
   final VoidCallback onClose;
 
-  const SubscriptionHeaderWidget({
-    Key? key,
-    required this.onClose,
-  }) : super(key: key);
+  const SubscriptionHeaderWidget({super.key, required this.onClose});
 
   @override
   Widget build(BuildContext context) {

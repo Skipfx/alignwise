@@ -12,14 +12,14 @@ class CategoryFilterWidget extends StatelessWidget {
   final Function(String) onSortSelected;
 
   const CategoryFilterWidget({
-    Key? key,
+    super.key,
     required this.categories,
     required this.sortOptions,
     required this.selectedCategory,
     required this.selectedSort,
     required this.onCategorySelected,
     required this.onSortSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

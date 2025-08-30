@@ -9,10 +9,10 @@ class StoryHighlightsWidget extends StatelessWidget {
   final Function(Map<String, dynamic>) onStoryTap;
 
   const StoryHighlightsWidget({
-    Key? key,
+    super.key,
     required this.stories,
     required this.onStoryTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class StoryHighlightsWidget extends StatelessWidget {
           child: Text('Daily Wellness Wins',
               style: GoogleFonts.inter(
                   fontSize: 16.sp, fontWeight: FontWeight.w600))),
-      Container(
+      SizedBox(
           height: 20.h,
           child: ListView.builder(
               scrollDirection: Axis.horizontal,

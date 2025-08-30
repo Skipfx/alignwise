@@ -10,10 +10,10 @@ class WeeklyMacroTrends extends StatefulWidget {
   final Map<String, double> targets;
 
   const WeeklyMacroTrends({
-    Key? key,
+    super.key,
     required this.weeklyData,
     required this.targets,
-  }) : super(key: key);
+  });
 
   @override
   State<WeeklyMacroTrends> createState() => _WeeklyMacroTrendsState();
@@ -150,7 +150,7 @@ class _WeeklyMacroTrendsState extends State<WeeklyMacroTrends> {
                     text = widget.weeklyData[value.toInt()]['day'];
                   }
                   return SideTitleWidget(
-                    axisSide: meta.axisSide,
+                    meta: meta,
                     child: Text(text, style: style),
                   );
                 },
@@ -240,7 +240,13 @@ class _WeeklyMacroTrendsState extends State<WeeklyMacroTrends> {
           lineTouchData: LineTouchData(
             enabled: true,
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: AppTheme.lightTheme.colorScheme.surface,
+              tooltipBorder: BorderSide(
+                color: AppTheme.lightTheme.colorScheme.surface,
+                width: 1,
+              ),
+              tooltipRoundedRadius: 8,
+              getTooltipColor: (touchedSpot) =>
+                  AppTheme.lightTheme.colorScheme.surface,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
                   final flSpot = barSpot;

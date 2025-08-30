@@ -17,6 +17,7 @@ import '../presentation/premium_upgrade/premium_upgrade.dart';
 import '../presentation/fitness_programs/fitness_programs.dart';
 import '../presentation/achievement_gallery/achievement_gallery.dart';
 import '../presentation/community_feed/community_feed.dart';
+import '../presentation/live_sessions_hub/live_sessions_hub.dart';
 
 class AppRoutes {
   // TODO: Add your routes here
@@ -39,6 +40,11 @@ class AppRoutes {
   static const String fitnessPrograms = '/fitness-programs';
   static const String achievementGallery = '/achievement-gallery';
   static const String communityFeed = '/community-feed';
+  static const String liveSessionsHub = '/live-sessions-hub';
+
+  // Auth callback routes
+  static const String authConfirm = '/auth/confirm';
+  static const String authResetPassword = '/auth/reset-password';
 
   static Map<String, WidgetBuilder> routes = {
     initial: (context) => const SplashScreen(),
@@ -60,6 +66,7 @@ class AppRoutes {
     fitnessPrograms: (context) => const FitnessPrograms(),
     achievementGallery: (context) => const AchievementGallery(),
     communityFeed: (context) => const CommunityFeed(),
+    liveSessionsHub: (context) => const LiveSessionsHub(),
     // TODO: Add your other routes here
   };
 }

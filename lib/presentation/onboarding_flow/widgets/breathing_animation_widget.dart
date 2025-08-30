@@ -4,7 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../../core/app_export.dart';
 
 class BreathingAnimationWidget extends StatefulWidget {
-  const BreathingAnimationWidget({Key? key}) : super(key: key);
+  const BreathingAnimationWidget({super.key});
 
   @override
   State<BreathingAnimationWidget> createState() =>

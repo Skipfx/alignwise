@@ -10,12 +10,12 @@ class IngredientListWidget extends StatelessWidget {
   final Function(int, int) onReorder;
 
   const IngredientListWidget({
-    Key? key,
+    super.key,
     required this.ingredients,
     required this.onRemoveIngredient,
     required this.onUpdateQuantity,
     required this.onReorder,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

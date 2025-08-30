@@ -11,7 +11,7 @@ import './widgets/sleep_sounds_widget.dart';
 import './widgets/streak_counter_widget.dart';
 
 class MindfulnessHub extends StatefulWidget {
-  const MindfulnessHub({Key? key}) : super(key: key);
+  const MindfulnessHub({super.key});
 
   @override
   State<MindfulnessHub> createState() => _MindfulnessHubState();

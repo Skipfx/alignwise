@@ -9,11 +9,11 @@ class StreakCounterWidget extends StatelessWidget {
   final int weeklyGoal;
 
   const StreakCounterWidget({
-    Key? key,
+    super.key,
     required this.currentStreak,
     required this.weeklyMinutes,
     required this.weeklyGoal,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,160 +1,117 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../widgets/custom_icon_widget.dart';
 
-class CustomTextField extends StatefulWidget {
-  final String label;
+class CustomTextField extends StatelessWidget {
+  final TextEditingController controller;
   final String hint;
   final String iconName;
-  final bool isPassword;
-  final TextInputType keyboardType;
-  final TextEditingController controller;
+  final String label;
+  final bool obscureText;
+  final TextInputType? keyboardType;
   final String? Function(String?)? validator;
-  final bool showValidation;
+  final Widget? suffixIcon;
 
   const CustomTextField({
-    Key? key,
-    required this.label,
+    super.key,
+    required this.controller,
     required this.hint,
     required this.iconName,
-    this.isPassword = false,
-    this.keyboardType = TextInputType.text,
-    required this.controller,
+    required this.label,
+    this.obscureText = false,
+    this.keyboardType,
     this.validator,
-    this.showValidation = false,
-  }) : super(key: key);
-
-  @override
-  State<CustomTextField> createState() => _CustomTextFieldState();
-}
-
-class _CustomTextFieldState extends State<CustomTextField>
-    with SingleTickerProviderStateMixin {
-  bool _obscureText = true;
-  bool _isFocused = false;
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _obscureText = widget.isPassword;
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _togglePasswordVisibility() {
-    setState(() {
-      _obscureText = !_obscureText;
-    });
-  }
+    this.suffixIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hasError = widget.showValidation &&
-        widget.validator != null &&
-        widget.validator!(widget.controller.text) != null;
-
-    if (hasError) {
-      _animationController.forward();
-    } else {
-      _animationController.reverse();
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          height: 6.h,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _isFocused
-                  ? AppTheme.lightTheme.colorScheme.primary
-                  : hasError
-                      ? AppTheme.lightTheme.colorScheme.error
-                      : AppTheme.lightTheme.colorScheme.outline
-                          .withValues(alpha: 0.3),
-              width: _isFocused ? 2 : 1,
-            ),
-          ),
-          child: Focus(
-            onFocusChange: (focused) {
-              setState(() {
-                _isFocused = focused;
-              });
-            },
-            child: TextFormField(
-              controller: widget.controller,
-              obscureText: widget.isPassword ? _obscureText : false,
-              keyboardType: widget.keyboardType,
-              style: Theme.of(context).textTheme.bodyLarge,
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                    ),
-                prefixIcon: Padding(
-                  padding: EdgeInsets.all(3.w),
-                  child: CustomIconWidget(
-                    iconName: widget.iconName,
-                    color: _isFocused
-                        ? AppTheme.lightTheme.colorScheme.primary
-                        : AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                ),
-                suffixIcon: widget.isPassword
-                    ? IconButton(
-                        onPressed: _togglePasswordVisibility,
-                        icon: CustomIconWidget(
-                          iconName:
-                              _obscureText ? 'visibility' : 'visibility_off',
-                          color:
-                              AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                          size: 20,
-                        ),
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 4.w,
-                  vertical: 2.h,
-                ),
-              ),
+        // Label
+        Padding(
+          padding: EdgeInsets.only(bottom: 1.h),
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
             ),
           ),
         ),
-        AnimatedBuilder(
-          animation: _animation,
-          builder: (context, child) {
-            return SizeTransition(
-              sizeFactor: _animation,
-              child: Container(
-                padding: EdgeInsets.only(top: 0.5.h, left: 1.w),
-                child: hasError
-                    ? Text(
-                        widget.validator!(widget.controller.text) ?? '',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.lightTheme.colorScheme.error,
-                            ),
-                      )
-                    : const SizedBox.shrink(),
+
+        // Text Field
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          validator: validator,
+          style: GoogleFonts.inter(
+            fontSize: 16.sp,
+            color: Colors.black87,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+              fontSize: 16.sp,
+              color: Colors.grey[500],
+            ),
+            prefixIcon: Padding(
+              padding: EdgeInsets.all(3.w),
+              child: CustomIconWidget(
+                iconName: iconName,
+                color: Colors.grey[600],
+                size: 20,
               ),
-            );
-          },
+            ),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(
+              vertical: 2.h,
+              horizontal: 4.w,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.grey[300]!,
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.grey[300]!,
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF6366F1),
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 2,
+              ),
+            ),
+          ),
         ),
       ],
     );

@@ -93,8 +93,9 @@ class _AchievementGalleryState extends State<AchievementGallery>
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('Error loading achievement gallery data: $e');
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Failed to load achievements. Please try again.';
         _isLoading = false;
       });
     }
@@ -135,7 +136,10 @@ class _AchievementGalleryState extends State<AchievementGallery>
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? CustomErrorWidget()
+                ? CustomErrorWidget(
+                    message: _errorMessage!,
+                    onRetry: _refreshData,
+                  )
                 : RefreshIndicator(
                     onRefresh: _refreshData,
                     child: CustomScrollView(slivers: [
@@ -208,7 +212,7 @@ class _AchievementGalleryState extends State<AchievementGallery>
                         ],
 
                         // Category Tabs
-                        Container(
+                        SizedBox(
                             height: 60,
                             child: TabBar(
                                 controller: _tabController,
@@ -239,7 +243,7 @@ class _AchievementGalleryState extends State<AchievementGallery>
                                       _getFilteredAchievements();
 
                                   if (filteredAchievements.isEmpty) {
-                                    return Container(
+                                    return SizedBox(
                                         height: 200,
                                         child: Column(
                                             mainAxisAlignment:
@@ -286,41 +290,56 @@ class _AchievementGalleryState extends State<AchievementGallery>
                                             achievement['target_value'] ?? 100;
 
                                         if (isCompleted) {
+                                          final achievementDef = achievement[
+                                                  'achievement_definitions']
+                                              as Map<String, dynamic>?;
                                           return AchievementBadgeWidget(
-                                              title: achievement['title'] ??
+                                              title: achievementDef?['title'] ??
+                                                  achievement['title'] ??
                                                   'Unknown Achievement',
-                                              description:
+                                              description: achievementDef?[
+                                                      'description'] ??
                                                   achievement['description'] ??
-                                                      '',
-                                              badgeRarity:
+                                                  '',
+                                              badgeRarity: achievementDef?[
+                                                      'badge_rarity'] ??
                                                   achievement['badge_rarity'] ??
-                                                      'common',
+                                                  'common',
                                               badgeIconUrl:
                                                   achievement['badge_icon_url'],
                                               isUnlocked: true,
                                               unlockedAt:
                                                   achievement['completed_at'],
-                                              points: achievement[
+                                              points: achievementDef?[
+                                                      'points_awarded'] ??
+                                                  achievement[
                                                       'points_awarded'] ??
                                                   0,
                                               onTap: () {
                                                 // TODO: Show achievement details
                                               });
                                         } else {
+                                          final achievementDef = achievement[
+                                                  'achievement_definitions']
+                                              as Map<String, dynamic>?;
                                           return AchievementProgressCardWidget(
-                                              title: achievement['title'] ??
+                                              title: achievementDef?['title'] ??
+                                                  achievement['title'] ??
                                                   'Unknown Achievement',
-                                              description:
+                                              description: achievementDef?[
+                                                      'description'] ??
                                                   achievement['description'] ??
-                                                      '',
+                                                  '',
                                               currentProgress: progress,
                                               targetProgress: target,
-                                              progressUnit:
+                                              progressUnit: achievementDef?[
+                                                      'target_unit'] ??
                                                   achievement['target_unit'] ??
-                                                      'points',
-                                              badgeRarity:
+                                                  'points',
+                                              badgeRarity: achievementDef?[
+                                                      'badge_rarity'] ??
                                                   achievement['badge_rarity'] ??
-                                                      'common',
+                                                  'common',
                                               onTap: () {
                                                 // TODO: Show achievement details
                                               });

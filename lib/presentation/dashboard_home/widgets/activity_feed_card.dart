@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
+import 'package:google_fonts/google_fonts.dart'; // Add this import
 
-import '../../../../core/app_export.dart';
+import '../../../core/app_export.dart';
 
-class ActivityFeedCard extends StatelessWidget {
+class ActivityFeedCard extends StatefulWidget {
   final String type;
   final String title;
   final String description;
@@ -15,7 +16,7 @@ class ActivityFeedCard extends StatelessWidget {
   final VoidCallback? onDismiss;
 
   const ActivityFeedCard({
-    Key? key,
+    super.key,
     required this.type,
     required this.title,
     required this.description,
@@ -25,118 +26,228 @@ class ActivityFeedCard extends StatelessWidget {
     required this.timestamp,
     this.onTap,
     this.onDismiss,
-  }) : super(key: key);
+  });
+
+  @override
+  State<ActivityFeedCard> createState() => _ActivityFeedCardState();
+}
+
+class _ActivityFeedCardState extends State<ActivityFeedCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<double>(
+      begin: 50.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
+    ));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
-      key: Key('${type}_${timestamp.millisecondsSinceEpoch}'),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDismiss?.call(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: EdgeInsets.only(right: 4.w),
-        decoration: BoxDecoration(
-          color: AppTheme.lightTheme.colorScheme.error.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: CustomIconWidget(
-          iconName: 'delete',
-          color: AppTheme.lightTheme.colorScheme.error,
-          size: 6.w,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
-        onLongPress: () => _showActionSheet(context),
-        child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
-          padding: EdgeInsets.all(4.w),
-          decoration: BoxDecoration(
-            color: AppTheme.lightTheme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icon or Image
-              Container(
-                width: 12.w,
-                height: 12.w,
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _slideAnimation.value),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Dismissible(
+              key: UniqueKey(),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
                 decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.errorLight,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CustomImageWidget(
-                          imageUrl: imageUrl!,
-                          width: 12.w,
-                          height: 12.w,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Center(
-                        child: CustomIconWidget(
-                          iconName: iconName,
-                          color: iconColor,
-                          size: 6.w,
-                        ),
-                      ),
+                child: CustomIconWidget(
+                  iconName: 'delete',
+                  color: Colors.white,
+                  size: 6.w,
+                ),
               ),
-              SizedBox(width: 3.w),
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: AppTheme.lightTheme.textTheme.titleMedium
-                                ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          _formatTimestamp(timestamp),
-                          style:
-                              AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme
-                                .lightTheme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+              onDismissed: (_) => widget.onDismiss?.call(),
+              child: GestureDetector(
+                onTap: widget.onTap,
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                  padding: EdgeInsets.all(4.w),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        AppTheme.lightMint.withValues(alpha: 0.05),
                       ],
                     ),
-                    SizedBox(height: 0.5.h),
-                    Text(
-                      description,
-                      style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.lightMint.withValues(alpha: 0.4),
+                      width: 1,
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Activity icon
+                      Container(
+                        padding: EdgeInsets.all(3.w),
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            colors: [
+                              widget.iconColor.withValues(alpha: 0.1),
+                              widget.iconColor.withValues(alpha: 0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: widget.iconColor.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: CustomIconWidget(
+                          iconName: widget.iconName,
+                          color: widget.iconColor,
+                          size: 5.w,
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      // Content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title with type badge
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    widget.title,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryBlue,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // Type badge
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 2.w,
+                                    vertical: 0.5.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentMint
+                                        .withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    widget.type.toUpperCase(),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryBlue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 1.h),
+                            // Description
+                            if (widget.description.isNotEmpty)
+                              Text(
+                                widget.description,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppTheme.darkGrey,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            SizedBox(height: 1.h),
+                            // Timestamp
+                            Row(
+                              children: [
+                                CustomIconWidget(
+                                  iconName: 'access_time',
+                                  color:
+                                      AppTheme.darkGrey.withValues(alpha: 0.7),
+                                  size: 4.w,
+                                ),
+                                SizedBox(width: 1.w),
+                                Text(
+                                  _formatTimestamp(widget.timestamp),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.darkGrey
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Arrow indicator
+                      CustomIconWidget(
+                        iconName: 'arrow_forward_ios',
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.6),
+                        size: 4.w,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -181,7 +292,7 @@ class ActivityFeedCard extends StatelessWidget {
               title: Text('Not Interested'),
               onTap: () {
                 Navigator.pop(context);
-                onDismiss?.call();
+                widget.onDismiss?.call();
               },
             ),
             SizedBox(height: 2.h),
@@ -195,12 +306,14 @@ class ActivityFeedCard extends StatelessWidget {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
-    if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
+    if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
     }
   }
 }

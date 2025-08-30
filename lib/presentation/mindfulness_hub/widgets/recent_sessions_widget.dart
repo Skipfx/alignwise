@@ -10,12 +10,12 @@ class RecentSessionsWidget extends StatelessWidget {
   final Function(Map<String, dynamic> session) onShareSession;
 
   const RecentSessionsWidget({
-    Key? key,
+    super.key,
     required this.recentSessions,
     required this.onSessionTap,
     required this.onFavoriteToggle,
     required this.onShareSession,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

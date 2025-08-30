@@ -85,7 +85,7 @@ class _FitnessProgramsState extends State<FitnessPrograms> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Failed to load fitness programs. Please try again.';
         _isLoading = false;
       });
     }
@@ -102,7 +102,10 @@ class _FitnessProgramsState extends State<FitnessPrograms> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? CustomErrorWidget()
+                ? CustomErrorWidget(
+                    message: _errorMessage!,
+                    onRetry: _refreshData,
+                  )
                 : RefreshIndicator(
                     onRefresh: _refreshData,
                     child: CustomScrollView(slivers: [

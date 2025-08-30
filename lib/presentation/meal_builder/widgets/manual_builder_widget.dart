@@ -13,13 +13,13 @@ class ManualBuilderWidget extends StatefulWidget {
   final Function(int, int) onReorder;
 
   const ManualBuilderWidget({
-    Key? key,
+    super.key,
     required this.ingredients,
     required this.onAddIngredient,
     required this.onRemoveIngredient,
     required this.onUpdateQuantity,
     required this.onReorder,
-  }) : super(key: key);
+  });
 
   @override
   State<ManualBuilderWidget> createState() => _ManualBuilderWidgetState();

@@ -11,12 +11,12 @@ class BreathingGuideWidget extends StatefulWidget {
   final int exhaleSeconds;
 
   const BreathingGuideWidget({
-    Key? key,
+    super.key,
     required this.isActive,
     this.inhaleSeconds = 4,
     this.holdSeconds = 4,
     this.exhaleSeconds = 4,
-  }) : super(key: key);
+  });
 
   @override
   State<BreathingGuideWidget> createState() => _BreathingGuideWidgetState();

@@ -14,7 +14,7 @@ class ChallengeCategoryCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const ChallengeCategoryCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.difficulty,
@@ -23,7 +23,7 @@ class ChallengeCategoryCard extends StatelessWidget {
     required this.imageUrl,
     required this.categoryColor,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

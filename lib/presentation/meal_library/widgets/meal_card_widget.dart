@@ -15,7 +15,7 @@ class MealCardWidget extends StatelessWidget {
   final VoidCallback onLog;
 
   const MealCardWidget({
-    Key? key,
+    super.key,
     required this.meal,
     required this.isGridView,
     required this.isMultiSelectMode,
@@ -25,7 +25,7 @@ class MealCardWidget extends StatelessWidget {
     required this.onDelete,
     required this.onDuplicate,
     required this.onLog,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +128,7 @@ class MealCardWidget extends StatelessWidget {
               ),
               SizedBox(height: 1.h),
               Text(
-                '${calories} cal',
+                '$calories cal',
                 style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                   color: AppTheme.lightTheme.primaryColor,
                   fontWeight: FontWeight.w600,
@@ -342,7 +342,7 @@ class MealCardWidget extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '${calories} cal',
+                      '$calories cal',
                       style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.lightTheme.primaryColor,
                         fontWeight: FontWeight.w600,

@@ -11,7 +11,7 @@ import '../../../core/app_export.dart';
 import '../../services/gemini_service.dart';
 
 class BarcodeScanner extends StatefulWidget {
-  const BarcodeScanner({Key? key}) : super(key: key);
+  const BarcodeScanner({super.key});
 
   @override
   State<BarcodeScanner> createState() => _BarcodeScannerState();

@@ -8,10 +8,10 @@ class MoodTrackingWidget extends StatefulWidget {
   final String? todaysMood;
 
   const MoodTrackingWidget({
-    Key? key,
+    super.key,
     required this.onMoodSubmit,
     this.todaysMood,
-  }) : super(key: key);
+  });
 
   @override
   State<MoodTrackingWidget> createState() => _MoodTrackingWidgetState();

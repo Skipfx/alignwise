@@ -1,195 +1,200 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StripeService {
-  static const String _baseUrl =
-      'https://your-project.supabase.co/functions/v1';
+  static StripeService? _instance;
+  String? _publishableKey;
 
-  // Australian Dollar pricing - Updated for $9.99 AUD monthly
-  static const String monthlyPriceId = 'price_monthly_premium_aud';
-  static const String yearlyPriceId = 'price_yearly_premium_aud';
+  // Price IDs - these should be set from your Stripe dashboard
+  static const String monthlyPriceId =
+      'price_1234567890'; // Replace with actual monthly price ID
+  static const String yearlyPriceId =
+      'price_0987654321'; // Replace with actual yearly price ID
 
-  // Price values in cents (Australian dollars)
-  static const int monthlyPriceCents = 999; // $9.99 AUD
-  static const int yearlyPriceCents = 7999; // $79.99 AUD (save 20%)
+  StripeService._();
 
-  static Future<String?> createCheckoutSession({
-    required String priceId,
-    required String successUrl,
-    required String cancelUrl,
-  }) async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
-
-      final response = await http.post(
-        Uri.parse('$_baseUrl/create-checkout-session'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization':
-              'Bearer ${Supabase.instance.client.auth.currentSession?.accessToken}',
-        },
-        body: json.encode({
-          'priceId': priceId,
-          'successUrl': successUrl,
-          'cancelUrl': cancelUrl,
-        }),
-      );
-
-      developer
-          .log('Stripe Response: ${response.statusCode} - ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['url'] as String?;
-      } else {
-        final errorData = json.decode(response.body);
-        throw Exception(
-            errorData['error'] ?? 'Failed to create checkout session');
-      }
-    } catch (e) {
-      developer.log('Error creating checkout session: $e');
-      return null;
-    }
+  static StripeService get instance {
+    _instance ??= StripeService._();
+    return _instance!;
   }
 
-  static Future<Map<String, dynamic>?> getSubscriptionStatus() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return null;
-
-      final response = await Supabase.instance.client
-          .from('subscriptions')
-          .select('''
-            *,
-            customers!inner(user_id),
-            prices(unit_amount, currency, interval_type)
-          ''')
-          .eq('customers.user_id', user.id)
-          .order('created_at', ascending: false)
-          .limit(1);
-
-      return response.isNotEmpty ? response.first : null;
-    } catch (e) {
-      developer.log('Error fetching subscription status: $e');
-      return null;
-    }
-  }
-
-  static Future<bool> cancelSubscription() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return false;
-
-      final response = await http.post(
-        Uri.parse('$_baseUrl/cancel-subscription'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization':
-              'Bearer ${Supabase.instance.client.auth.currentSession?.accessToken}',
-        },
-      );
-
-      return response.statusCode == 200;
-    } catch (e) {
-      developer.log('Error canceling subscription: $e');
-      return false;
-    }
-  }
-
-  static String getSuccessUrl() {
-    return 'https://alignwise.com/payment-success';
-  }
-
-  static String getCancelUrl() {
-    return 'https://alignwise.com/payment-cancel';
-  }
-
-  // Helper methods for Australian dollar formatting
-  static String formatAudPrice(int cents) {
-    return 'AU\$${(cents / 100).toStringAsFixed(2)}';
-  }
-
+  // Static methods for price information
   static String getMonthlyPrice() {
-    return formatAudPrice(monthlyPriceCents);
+    return 'AU\$9.99'; // Monthly price
   }
 
   static String getYearlyPrice() {
-    return formatAudPrice(yearlyPriceCents);
+    return 'AU\$79.99'; // Yearly price
   }
 
   static String getYearlyMonthlyEquivalent() {
-    final monthlyEquivalent = (yearlyPriceCents / 12).round();
-    return formatAudPrice(monthlyEquivalent);
+    return 'AU\$6.67'; // Yearly price divided by 12
   }
 
-  static bool isSubscriptionActive(Map<String, dynamic>? subscription) {
-    if (subscription == null) return false;
-
-    final status = subscription['status'] as String?;
-    return status == 'active' || status == 'trialing';
+  static String getSuccessUrl() {
+    return 'https://alignwise.app/success';
   }
 
-  static bool isInTrial(Map<String, dynamic>? subscription) {
-    if (subscription == null) return false;
+  static String getCancelUrl() {
+    return 'https://alignwise.app/cancel';
+  }
 
-    final status = subscription['status'] as String?;
-    final trialEnd = subscription['trial_end'] as String?;
+  static Future<String> createCheckoutSession({
+    required String priceId,
+    required String userId,
+    String? successUrl,
+    String? cancelUrl,
+  }) async {
+    try {
+      final supabaseClient = Supabase.instance.client;
 
-    if (status == 'trialing' && trialEnd != null) {
-      final trialEndDate = DateTime.parse(trialEnd);
-      return DateTime.now().isBefore(trialEndDate);
+      final response = await supabaseClient.functions.invoke(
+        'create-checkout-session',
+        body: {
+          'priceId': priceId,
+          'userId': userId,
+          'successUrl': successUrl ?? getSuccessUrl(),
+          'cancelUrl': cancelUrl ?? getCancelUrl(),
+        },
+      );
+
+      if (response.status != 200) {
+        throw Exception('Failed to create checkout session: ${response.data}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      return data['url'] as String;
+    } catch (e) {
+      debugPrint('❌ Checkout session creation failed: $e');
+      throw Exception('Checkout session creation failed: $e');
     }
-
-    return false;
   }
 
-  static int getDaysLeftInTrial(Map<String, dynamic>? subscription) {
-    if (!isInTrial(subscription)) return 0;
+  Future<void> initialize() async {
+    try {
+      // Load Stripe publishable key from env.json
+      final String envString = await rootBundle.loadString('env.json');
+      final Map<String, dynamic> env = json.decode(envString);
 
-    final trialEnd = subscription!['trial_end'] as String;
-    final trialEndDate = DateTime.parse(trialEnd);
-    final now = DateTime.now();
+      _publishableKey = env['STRIPE_PUBLISHABLE_KEY']?.toString();
 
-    return trialEndDate.difference(now).inDays;
+      if (_publishableKey == null ||
+          _publishableKey!.isEmpty ||
+          _publishableKey!.contains('your-')) {
+        throw Exception('STRIPE_PUBLISHABLE_KEY not configured in env.json');
+      }
+
+      debugPrint('✅ Stripe service initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Stripe initialization failed: $e');
+      throw Exception('Stripe initialization failed: $e');
+    }
   }
 
-  static DateTime? getCurrentPeriodEnd(Map<String, dynamic>? subscription) {
-    if (subscription == null) return null;
+  Future<Map<String, dynamic>> createCheckoutSessionInstance({
+    required String priceId,
+    required String userId,
+    String? successUrl,
+    String? cancelUrl,
+  }) async {
+    try {
+      if (_publishableKey == null) {
+        await initialize();
+      }
 
-    final periodEnd = subscription['current_period_end'] as String?;
-    return periodEnd != null ? DateTime.parse(periodEnd) : null;
+      final supabaseClient = Supabase.instance.client;
+
+      final response = await supabaseClient.functions.invoke(
+        'create-checkout-session',
+        body: {
+          'priceId': priceId,
+          'userId': userId,
+          'successUrl': successUrl ?? 'https://alignwise.app/success',
+          'cancelUrl': cancelUrl ?? 'https://alignwise.app/cancel',
+        },
+      );
+
+      if (response.status != 200) {
+        throw Exception('Failed to create checkout session: ${response.data}');
+      }
+
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('❌ Checkout session creation failed: $e');
+      throw Exception('Checkout session creation failed: $e');
+    }
   }
 
-  // Check if user has premium access
-  static Future<bool> hasPremiumAccess() async {
-    final subscription = await getSubscriptionStatus();
-    return isSubscriptionActive(subscription);
+  Future<List<Map<String, dynamic>>> getSubscriptionPlans() async {
+    try {
+      final supabaseClient = Supabase.instance.client;
+
+      final response = await supabaseClient.from('products').select('''
+            *,
+            prices (
+              id,
+              currency,
+              unit_amount,
+              interval,
+              interval_count,
+              type
+            )
+          ''').eq('active', true);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('❌ Failed to get subscription plans: $e');
+      throw Exception('Failed to get subscription plans: $e');
+    }
   }
 
-  // Get subscription info for display
-  static Future<Map<String, dynamic>?> getSubscriptionDisplayInfo() async {
-    final subscription = await getSubscriptionStatus();
-    if (subscription == null) return null;
+  Future<Map<String, dynamic>?> getCurrentSubscription(String userId) async {
+    try {
+      final supabaseClient = Supabase.instance.client;
 
-    final prices = subscription['prices'] as Map<String, dynamic>?;
-    final unitAmount = prices?['unit_amount'] as int? ?? 0;
-    final currency = prices?['currency'] as String? ?? 'aud';
-    final intervalType = prices?['interval_type'] as String? ?? 'month';
+      final response = await supabaseClient.from('subscriptions').select('''
+            *,
+            prices (
+              id,
+              currency,
+              unit_amount,
+              interval,
+              products (
+                name,
+                description
+              )
+            )
+          ''').eq('user_id', userId).eq('status', 'active').maybeSingle();
 
-    return {
-      'status': subscription['status'],
-      'is_active': isSubscriptionActive(subscription),
-      'is_trial': isInTrial(subscription),
-      'trial_days_left': getDaysLeftInTrial(subscription),
-      'price': formatAudPrice(unitAmount),
-      'interval': intervalType,
-      'current_period_end': getCurrentPeriodEnd(subscription),
-      'cancel_at_period_end': subscription['cancel_at_period_end'] ?? false,
-    };
+      return response;
+    } catch (e) {
+      debugPrint('❌ Failed to get current subscription: $e');
+      return null;
+    }
   }
+
+  Future<void> cancelSubscription(String subscriptionId) async {
+    try {
+      final supabaseClient = Supabase.instance.client;
+
+      final response = await supabaseClient.functions.invoke(
+        'manage-subscription',
+        body: {
+          'subscriptionId': subscriptionId,
+          'action': 'cancel',
+        },
+      );
+
+      if (response.status != 200) {
+        throw Exception('Failed to cancel subscription: ${response.data}');
+      }
+    } catch (e) {
+      debugPrint('❌ Subscription cancellation failed: $e');
+      throw Exception('Subscription cancellation failed: $e');
+    }
+  }
+
+  String? get publishableKey => _publishableKey;
 }

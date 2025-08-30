@@ -14,7 +14,7 @@ class ActiveChallengeCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const ActiveChallengeCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.progress,
@@ -23,7 +23,7 @@ class ActiveChallengeCard extends StatelessWidget {
     required this.dailyTasks,
     required this.imageUrl,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +96,7 @@ class ActiveChallengeCard extends StatelessWidget {
                   Positioned(
                     top: 2.h,
                     right: 4.w,
-                    child: Container(
+                    child: SizedBox(
                       width: 15.w,
                       height: 15.w,
                       child: Stack(
@@ -243,7 +243,7 @@ class ActiveChallengeCard extends StatelessWidget {
                               ],
                             ),
                           ))
-                      .toList(),
+                      ,
                   if (dailyTasks.length > 3) ...[
                     SizedBox(height: 0.5.h),
                     Text(

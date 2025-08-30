@@ -13,14 +13,14 @@ class RestPeriodWidget extends StatelessWidget {
   final VoidCallback? onSkipRest;
 
   const RestPeriodWidget({
-    Key? key,
+    super.key,
     required this.restSeconds,
     required this.nextExerciseName,
     required this.nextExerciseImage,
     this.isActive = false,
     this.onRestComplete,
     this.onSkipRest,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

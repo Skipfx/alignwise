@@ -13,7 +13,7 @@ class AchievementBadge extends StatefulWidget {
   final VoidCallback? onTap;
 
   const AchievementBadge({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.iconName,
@@ -21,7 +21,7 @@ class AchievementBadge extends StatefulWidget {
     required this.isUnlocked,
     this.unlockedDate,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<AchievementBadge> createState() => _AchievementBadgeState();

@@ -4,13 +4,14 @@ import 'package:sizer/sizer.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/app_export.dart';
+import '../../services/auth_service.dart';
 import '../../services/stripe_service.dart';
 import './widgets/premium_features_widget.dart';
 import './widgets/pricing_plans_widget.dart';
 import './widgets/subscription_header_widget.dart';
 
 class PremiumUpgrade extends StatefulWidget {
-  const PremiumUpgrade({Key? key}) : super(key: key);
+  const PremiumUpgrade({super.key});
 
   @override
   State<PremiumUpgrade> createState() => _PremiumUpgradeState();
@@ -20,6 +21,7 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
   bool _isLoading = false;
   bool _isYearly = false;
   late WebViewController? _webViewController;
+  final _authService = AuthService.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +30,7 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
       body: SafeArea(
         child: Column(
           children: [
-            SubscriptionHeaderWidget(
-              onClose: () => Navigator.pop(context),
-            ),
+            SubscriptionHeaderWidget(onClose: () => Navigator.pop(context)),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 4.w),
@@ -67,10 +67,7 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryLight,
-            AppTheme.secondaryLight,
-          ],
+          colors: [AppTheme.primaryLight, AppTheme.primaryVariantLight],
         ),
         borderRadius: BorderRadius.circular(4.w),
       ),
@@ -117,33 +114,34 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
           ),
           elevation: 2,
         ),
-        child: _isLoading
-            ? SizedBox(
-                height: 3.h,
-                width: 3.h,
-                child: const CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CustomIconWidget(
-                    iconName: 'upgrade',
+        child:
+            _isLoading
+                ? SizedBox(
+                  height: 3.h,
+                  width: 3.h,
+                  child: const CircularProgressIndicator(
                     color: Colors.white,
-                    size: 5.w,
+                    strokeWidth: 2,
                   ),
-                  SizedBox(width: 3.w),
-                  Text(
-                    'Upgrade Now',
-                    style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
+                )
+                : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CustomIconWidget(
+                      iconName: 'upgrade',
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      size: 5.w,
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(width: 3.w),
+                    Text(
+                      'Upgrade Now',
+                      style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -154,9 +152,7 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
       decoration: BoxDecoration(
         color: AppTheme.successLight.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(2.w),
-        border: Border.all(
-          color: AppTheme.successLight.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppTheme.successLight.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -195,26 +191,30 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
     setState(() => _isLoading = true);
 
     try {
-      final priceId = _isYearly
-          ? StripeService.yearlyPriceId
-          : StripeService.monthlyPriceId;
+      if (!_authService.isAuthenticated) {
+        _showError('Please sign in to upgrade to premium.');
+        return;
+      }
+
+      final priceId =
+          _isYearly
+              ? StripeService.yearlyPriceId
+              : StripeService.monthlyPriceId;
       final successUrl = StripeService.getSuccessUrl();
       final cancelUrl = StripeService.getCancelUrl();
 
       final checkoutUrl = await StripeService.createCheckoutSession(
         priceId: priceId,
+        userId: _authService.currentUserId!,
         successUrl: successUrl,
         cancelUrl: cancelUrl,
       );
 
-      if (checkoutUrl != null) {
-        _showPaymentWebView(checkoutUrl);
-      } else {
-        _showError('Failed to create payment session. Please try again.');
-      }
+      _showPaymentWebView(checkoutUrl);
     } catch (e) {
       _showError(
-          'Payment setup failed. Please check your connection and try again.');
+        'Payment setup failed. Please check your connection and try again.',
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -225,64 +225,69 @@ class _PremiumUpgradeState extends State<PremiumUpgrade> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: 90.h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(4.w)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(4.w)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Complete Payment',
-                    style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+      builder:
+          (context) => Container(
+            height: 90.h,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(4.w)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryLight,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(4.w),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Colors.white),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Complete Payment',
+                        style: AppTheme.lightTheme.textTheme.titleLarge
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: WebViewWidget(
+                    controller:
+                        WebViewController()
+                          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                          ..setNavigationDelegate(
+                            NavigationDelegate(
+                              onNavigationRequest: (request) {
+                                if (request.url.contains('payment-success')) {
+                                  Navigator.pop(context);
+                                  _handlePaymentSuccess();
+                                  return NavigationDecision.prevent;
+                                }
+                                if (request.url.contains('payment-cancel')) {
+                                  Navigator.pop(context);
+                                  _handlePaymentCancel();
+                                  return NavigationDecision.prevent;
+                                }
+                                return NavigationDecision.navigate;
+                              },
+                            ),
+                          )
+                          ..loadRequest(Uri.parse(checkoutUrl)),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: WebViewWidget(
-                controller: WebViewController()
-                  ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                  ..setNavigationDelegate(
-                    NavigationDelegate(
-                      onNavigationRequest: (request) {
-                        if (request.url.contains('payment-success')) {
-                          Navigator.pop(context);
-                          _handlePaymentSuccess();
-                          return NavigationDecision.prevent;
-                        }
-                        if (request.url.contains('payment-cancel')) {
-                          Navigator.pop(context);
-                          _handlePaymentCancel();
-                          return NavigationDecision.prevent;
-                        }
-                        return NavigationDecision.navigate;
-                      },
-                    ),
-                  )
-                  ..loadRequest(Uri.parse(checkoutUrl)),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 

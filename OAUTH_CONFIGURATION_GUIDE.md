@@ -1,100 +1,145 @@
-# OAuth Configuration Guide for Supabase
+# 📧 Supabase Email Authentication Configuration Guide
 
-The "OAuth client was not found. Error 401: invalid_client" error occurs when OAuth providers are not properly configured in your Supabase project. Follow these steps to fix the issue:
+## 🚨 CRITICAL: Email Configuration Required
 
-## 🔧 Fix Steps
+Your authentication system is now properly implemented in code, but **email verification and password reset will NOT work** until you configure Supabase properly.
 
-### 1. Supabase Dashboard Configuration
+## 📋 Required Supabase Dashboard Configuration
 
-**Go to your Supabase project dashboard:**
-1. Navigate to Authentication > Providers
-2. Configure each OAuth provider you want to use:
+### 1. Email Templates Configuration
+Go to **Authentication > Email Templates** in your Supabase dashboard:
 
-#### Google OAuth Setup
-1. Enable Google provider in Supabase
-2. Add your Google OAuth credentials:
-   - **Client ID (Web)**: Get from Google Cloud Console
-   - **Client Secret**: Get from Google Cloud Console
-3. Set redirect URL: `https://[your-project-ref].supabase.co/auth/v1/callback`
+#### ✅ Confirm Signup Template:
+- **Subject:** Welcome to AlignWise - Please verify your email
+- **Body:** Update the redirect URL in the email template to:
+  - **Web:** `https://your-app-domain.com/auth/confirm`
+  - **Mobile:** `io.supabase.alignwise://auth/confirm`
 
-#### Apple OAuth Setup
-1. Enable Apple provider in Supabase
-2. Add your Apple OAuth credentials:
-   - **Services ID**: From Apple Developer Console
-   - **Team ID**: Your Apple Developer Team ID
-   - **Key ID**: From your Apple Sign In key
-   - **Private Key**: Your Apple Sign In private key
-3. Configure redirect URL in Apple Developer Console
+#### ✅ Magic Link Template:
+- **Subject:** Your AlignWise sign-in link
+- **Body:** Update redirect URL to match your app's deep link scheme
 
-#### Facebook OAuth Setup
-1. Enable Facebook provider in Supabase
-2. Add your Facebook OAuth credentials:
-   - **App ID**: From Facebook Developers Console
-   - **App Secret**: From Facebook Developers Console
-3. Set redirect URL: `https://[your-project-ref].supabase.co/auth/v1/callback`
+#### ✅ Reset Password Template:
+- **Subject:** Reset your AlignWise password
+- **Body:** Update the reset link to:
+  - **Web:** `https://your-app-domain.com/auth/reset-password`
+  - **Mobile:** `io.supabase.alignwise://auth/reset-password`
 
-### 2. Environment Variables Setup
+### 2. Redirect URLs Configuration
+Go to **Authentication > URL Configuration**:
 
-Update your `env.json` file with the OAuth client IDs:
+Add these **Redirect URLs:**
+```
+# For web deployment
+https://your-app-domain.com/auth/callback
+https://your-app-domain.com/auth/confirm
+https://your-app-domain.com/auth/reset-password
 
-```json
-{
-  "GOOGLE_WEB_CLIENT_ID": "your-google-web-client-id.apps.googleusercontent.com",
-  "GOOGLE_SERVER_CLIENT_ID": "your-google-server-client-id.apps.googleusercontent.com"
-}
+# For mobile app
+io.supabase.alignwise://auth/callback
+io.supabase.alignwise://auth/confirm  
+io.supabase.alignwise://auth/reset-password
 ```
 
-### 3. Platform-Specific Configuration
+### 3. Site URL Configuration
+Set your **Site URL** to:
+- **Development:** `http://localhost:3000` or your local dev URL
+- **Production:** `https://your-actual-domain.com`
 
-#### For Web (Google)
-- Use the Web Client ID in your Flutter web app
-- No additional platform configuration needed
+## 🔧 Replace Placeholder URLs
 
-#### For iOS (Google & Apple)
-- Add Google Service Info plist to iOS project
-- Configure URL schemes in iOS Info.plist
-- Apple Sign In works automatically on iOS
+In the code files generated, replace these placeholder URLs:
 
-#### For Android (Google & Facebook)
-- Add Google Services JSON to Android project
-- Configure signing certificate fingerprints
-- Add Facebook App ID to strings.xml
+### Update in `lib/services/supabase_service.dart`:
+```dart
+// Replace these lines:
+'https://your-app-domain.com/auth/callback'
+'https://your-app-domain.com/auth/confirm'  
+'https://your-app-domain.com/auth/reset-password'
 
-### 4. Common OAuth Setup Issues
+// With your actual domain:
+'https://alignwise.app/auth/callback'
+'https://alignwise.app/auth/confirm'
+'https://alignwise.app/auth/reset-password'
+```
 
-**Google OAuth:**
-- Ensure OAuth consent screen is configured
-- Add authorized domains to Google Cloud Console
-- Verify SHA-1/SHA-256 fingerprints for Android
+### Update in `lib/services/auth_service.dart`:
+Same URL replacements as above.
 
-**Apple OAuth:**
-- Verify Services ID configuration
-- Ensure return URL is properly set
-- Check private key format and permissions
+## 📧 SMTP Configuration (Recommended)
 
-**Facebook OAuth:**
-- Verify App Domains in Facebook settings
-- Ensure Privacy Policy URL is set
-- Check App Review status if needed
+### Option 1: Use Supabase Built-in SMTP (Limited)
+- Default rate limits apply
+- May have deliverability issues
 
-### 5. Testing OAuth Configuration
+### Option 2: Configure Custom SMTP Provider
+Go to **Authentication > SMTP Settings**:
 
-1. Test each provider individually
-2. Check Supabase Auth logs for specific error messages
-3. Verify redirect URLs match exactly
-4. Test on both development and production environments
+**Recommended Providers:**
+- **SendGrid** (reliable, good free tier)
+- **Mailgun** (developer-friendly)
+- **Amazon SES** (cost-effective for scale)
 
-## 🚨 Important Notes
+**Configuration:**
+- Enable custom SMTP
+- Add your SMTP credentials
+- Test email delivery
 
-- OAuth configuration must be done in the Supabase dashboard
-- Environment variables are for client-side configuration only
-- Redirect URLs must match exactly (including https/http)
-- Some providers require app review for production use
+## 🧪 Testing Email Flows
 
-## 📞 Support
+### Test Account Verification:
+1. Sign up with a real email address
+2. Check email for verification link
+3. Click link → should redirect to app
+4. Verify user can sign in after confirmation
 
-If you continue experiencing issues:
-1. Check Supabase Auth logs in the dashboard
-2. Verify all redirect URLs and credentials
-3. Test with a fresh OAuth app configuration
+### Test Password Reset:
+1. Go to sign-in page
+2. Click "Forgot Password"
+3. Enter email, click send
+4. Check email for reset link
+5. Click link → should redirect to app
+6. Complete password reset flow
+
+## ⚠️ Common Issues & Solutions
+
+### Issue: No emails received
+**Solutions:**
+- Check spam/junk folder
+- Verify SMTP configuration
+- Check Supabase logs for email errors
+- Verify email templates are enabled
+
+### Issue: Email links broken
+**Solutions:**
+- Ensure redirect URLs match exactly
+- Check deep link configuration
+- Verify URL schemes in iOS/Android config
+
+### Issue: Deep links not working
+**Solutions:**
+- Rebuild app after adding URL schemes
+- Test on physical device (simulators may not handle deep links)
+- Verify AndroidManifest.xml and Info.plist changes
+
+## 🚀 Production Deployment
+
+### Before Going Live:
+1. ✅ Configure custom SMTP provider
+2. ✅ Update all placeholder URLs to production domains
+3. ✅ Test email flows end-to-end
+4. ✅ Verify deep linking on actual devices
+5. ✅ Set up proper domain verification for email deliverability
+6. ✅ Configure rate limiting and abuse prevention
+
+## 📞 Need Help?
+
+If emails still don't work after this configuration:
+1. Check Supabase dashboard logs
+2. Verify all URLs match exactly
+3. Test with multiple email providers
 4. Contact Supabase support with specific error messages
+
+---
+
+**✅ After configuration, users will receive proper verification and password reset emails with working links that redirect back to your app correctly.**

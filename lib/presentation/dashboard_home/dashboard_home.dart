@@ -10,7 +10,7 @@ import './widgets/metric_card.dart';
 import './widgets/quick_action_button.dart';
 
 class DashboardHome extends StatefulWidget {
-  const DashboardHome({Key? key}) : super(key: key);
+  const DashboardHome({super.key});
 
   @override
   State<DashboardHome> createState() => _DashboardHomeState();
@@ -27,15 +27,15 @@ class _DashboardHomeState extends State<DashboardHome>
   final _supabaseService = SupabaseService.instance;
   DateTime _selectedDate = DateTime.now();
   bool _isRefreshing = false;
-  
-  // Mock dashboard data
-  final Map<String, dynamic> _dashboardData = {
+
+  // Real data from Supabase
+  Map<String, dynamic> _dashboardData = {
     "wellnessScore": 78.0,
     "todayMetrics": {
-      "calories": {"consumed": 1520, "goal": 2000},
-      "steps": {"taken": 8247},
-      "water": {"consumed": 6, "goal": 8},
-      "mindfulness": {"minutes": 15}
+      "calories": {"consumed": 0, "goal": 2000},
+      "steps": {"taken": 0},
+      "water": {"consumed": 0, "goal": 8},
+      "mindfulness": {"minutes": 0}
     },
     "recentActivities": <Map<String, dynamic>>[]
   };
@@ -45,6 +45,7 @@ class _DashboardHomeState extends State<DashboardHome>
     super.initState();
     _initializeAnimations();
     _checkAuthState();
+    _loadDashboardData();
   }
 
   void _checkAuthState() {
@@ -52,6 +53,42 @@ class _DashboardHomeState extends State<DashboardHome>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacementNamed(context, '/authentication-screen');
       });
+    }
+  }
+
+  Future<void> _loadDashboardData() async {
+    try {
+      // Load nutrition summary
+      final nutritionSummary =
+          await _supabaseService.getDailyNutritionSummary();
+
+      // Load workout stats
+      final workoutStats = await _supabaseService.getWeeklyWorkoutStats();
+
+      // Load community activities
+      final activities = await _supabaseService.getCommunityFeed(limit: 5);
+
+      setState(() {
+        _dashboardData["todayMetrics"]["calories"]["consumed"] =
+            nutritionSummary["total_calories"] ?? 0;
+        _dashboardData["todayMetrics"]["mindfulness"]["minutes"] =
+            15; // Mock for now
+        _dashboardData["recentActivities"] = activities
+            .map((activity) => {
+                  "type": "community",
+                  "title": activity["title"] ?? "Activity",
+                  "description": activity["description"] ?? "",
+                  "imageUrl": null,
+                  "iconName": "timeline",
+                  "iconColor": "0xFF2D5A3D",
+                  "timestamp": DateTime.parse(activity["created_at"] ??
+                          DateTime.now().toIso8601String())
+                      .toIso8601String(),
+                })
+            .toList();
+      });
+    } catch (e) {
+      print('Error loading dashboard data: $e');
     }
   }
 
@@ -125,13 +162,42 @@ class _DashboardHomeState extends State<DashboardHome>
     if (user?.userMetadata?['full_name'] != null) {
       return user!.userMetadata!['full_name'];
     }
-    return user?.email
-            ?.split('@')
-            .first
+
+    // Enhanced fallback logic for better name display
+    final email = user?.email;
+    if (email != null) {
+      // Try to get name from email prefix
+      final emailPrefix = email.split('@').first;
+
+      // Handle emails with dots (first.last@domain.com)
+      if (emailPrefix.contains('.')) {
+        return emailPrefix
             .split('.')
-            .map((e) => e[0].toUpperCase() + e.substring(1))
-            .join(' ') ??
-        'User';
+            .map((part) => part.isNotEmpty
+                ? part[0].toUpperCase() + part.substring(1)
+                : '')
+            .join(' ');
+      }
+
+      // Handle emails with underscores or hyphens
+      if (emailPrefix.contains('_') || emailPrefix.contains('-')) {
+        return emailPrefix
+            .replaceAll('_', ' ')
+            .replaceAll('-', ' ')
+            .split(' ')
+            .map((part) => part.isNotEmpty
+                ? part[0].toUpperCase() + part.substring(1)
+                : '')
+            .join(' ');
+      }
+
+      // Just capitalize the email prefix
+      return emailPrefix.isNotEmpty
+          ? emailPrefix[0].toUpperCase() + emailPrefix.substring(1)
+          : 'User';
+    }
+
+    return 'User';
   }
 
   @override
@@ -139,77 +205,82 @@ class _DashboardHomeState extends State<DashboardHome>
     return Scaffold(
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Column(
-          children: [
+        child: CustomScrollView(
+          slivers: [
             // Header with Sign Out Button
-            Padding(
-              padding: EdgeInsets.fromLTRB(6.w, 3.h, 6.w, 2.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  FadeTransition(
-                    opacity: _greetingAnimation,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getGreeting(),
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.lightTheme.colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                        ),
-                        SizedBox(height: 0.5.h),
-                        Text(
-                          _getUserName(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color:
-                                    AppTheme.lightTheme.colorScheme.onSurface,
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(6.w, 3.h, 6.w, 2.h),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FadeTransition(
+                      opacity: _greetingAnimation,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getGreeting(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppTheme
+                                      .lightTheme.colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                          SizedBox(height: 0.5.h),
+                          Text(
+                            _getUserName(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      AppTheme.lightTheme.colorScheme.onSurface,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: AppTheme.lightTheme.colorScheme.onSurface,
+                      ),
+                      onSelected: (value) {
+                        if (value == 'sign_out') {
+                          _handleSignOut();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem<String>(
+                          value: 'sign_out',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.logout,
+                                size: 20,
+                                color: AppTheme.lightTheme.colorScheme.error,
                               ),
+                              SizedBox(width: 2.w),
+                              Text(
+                                'Sign Out',
+                                style: TextStyle(
+                                  color: AppTheme.lightTheme.colorScheme.error,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: AppTheme.lightTheme.colorScheme.onSurface,
-                    ),
-                    onSelected: (value) {
-                      if (value == 'sign_out') {
-                        _handleSignOut();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem<String>(
-                        value: 'sign_out',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.logout,
-                              size: 20,
-                              color: AppTheme.lightTheme.colorScheme.error,
-                            ),
-                            SizedBox(width: 2.w),
-                            Text(
-                              'Sign Out',
-                              style: TextStyle(
-                                color: AppTheme.lightTheme.colorScheme.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+
             // Main Content
             SliverToBoxAdapter(
               child: Column(
@@ -236,97 +307,13 @@ class _DashboardHomeState extends State<DashboardHome>
     );
   }
 
-  Widget _buildStickyHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Date Picker
-        GestureDetector(
-          onTap: _showDatePicker,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-            decoration: BoxDecoration(
-              color: AppTheme.lightTheme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppTheme.lightTheme.colorScheme.outline
-                    .withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomIconWidget(
-                  iconName: 'calendar_today',
-                  color: AppTheme.lightTheme.colorScheme.primary,
-                  size: 5.w,
-                ),
-                SizedBox(width: 2.w),
-                Text(
-                  _formatSelectedDate(),
-                  style: AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(width: 1.w),
-                CustomIconWidget(
-                  iconName: 'keyboard_arrow_down',
-                  color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
-                  size: 4.w,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // Notification Bell
-        GestureDetector(
-          onTap: () {
-            // Handle notification tap
-          },
-          child: Container(
-            padding: EdgeInsets.all(2.w),
-            decoration: BoxDecoration(
-              color: AppTheme.lightTheme.colorScheme.surface,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.lightTheme.colorScheme.outline
-                    .withValues(alpha: 0.2),
-              ),
-            ),
-            child: Stack(
-              children: [
-                CustomIconWidget(
-                  iconName: 'notifications_outlined',
-                  color: AppTheme.lightTheme.colorScheme.onSurface,
-                  size: 6.w,
-                ),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    width: 2.w,
-                    height: 2.w,
-                    decoration: BoxDecoration(
-                      color: AppTheme.lightTheme.colorScheme.error,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildHeroSection() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w),
       child: Column(
         children: [
           Text(
-            'Good ${_getGreeting()}, Sarah!',
+            '${_getGreeting()}, ${_getUserName()}!',
             style: AppTheme.lightTheme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppTheme.lightTheme.colorScheme.onSurface,
@@ -353,7 +340,7 @@ class _DashboardHomeState extends State<DashboardHome>
   Widget _buildMetricsSection() {
     final metrics = _dashboardData["todayMetrics"] as Map<String, dynamic>;
 
-    return Container(
+    return SizedBox(
       height: 25.h,
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -417,9 +404,8 @@ class _DashboardHomeState extends State<DashboardHome>
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  // Handle view all
-                },
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/community-feed'),
                 child: Text('View All'),
               ),
             ],
@@ -516,32 +502,8 @@ class _DashboardHomeState extends State<DashboardHome>
 
   Future<void> _handleRefresh() async {
     setState(() => _isRefreshing = true);
-
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-
+    await _loadDashboardData();
     setState(() => _isRefreshing = false);
-  }
-
-  void _showDatePicker() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: AppTheme.lightTheme.colorScheme,
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-    }
   }
 
   void _showWellnessDetails() {
@@ -648,9 +610,16 @@ class _DashboardHomeState extends State<DashboardHome>
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
-                    // Add water logic
+                    try {
+                      await _supabaseService.logWaterIntake(250);
+                      _loadDashboardData();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error logging water: $e')),
+                      );
+                    }
                   },
                   child: Text('+1 Glass'),
                 ),
@@ -669,11 +638,8 @@ class _DashboardHomeState extends State<DashboardHome>
   void _handleActivityTap(Map<String, dynamic> activity) {
     final type = activity["type"] as String;
     switch (type) {
-      case 'recommendation':
-        Navigator.pushNamed(context, '/nutrition-tracking');
-        break;
-      case 'challenge':
-        Navigator.pushNamed(context, '/challenges-hub');
+      case 'community':
+        Navigator.pushNamed(context, '/community-feed');
         break;
       case 'workout':
         Navigator.pushNamed(context, '/fitness-tracking');
@@ -682,6 +648,7 @@ class _DashboardHomeState extends State<DashboardHome>
         Navigator.pushNamed(context, '/mindfulness-hub');
         break;
       default:
+        Navigator.pushNamed(context, '/nutrition-tracking');
         break;
     }
   }
@@ -690,17 +657,5 @@ class _DashboardHomeState extends State<DashboardHome>
     setState(() {
       (_dashboardData["recentActivities"] as List).remove(activity);
     });
-  }
-
-  String _formatSelectedDate() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final selected =
-        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-
-    if (selected == today) return 'Today';
-    if (selected == today.subtract(const Duration(days: 1))) return 'Yesterday';
-
-    return '${_selectedDate.month}/${_selectedDate.day}/${_selectedDate.year}';
   }
 }

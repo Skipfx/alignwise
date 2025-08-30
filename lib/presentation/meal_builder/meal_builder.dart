@@ -9,7 +9,7 @@ import './widgets/manual_builder_widget.dart';
 import './widgets/nutrition_preview_widget.dart';
 
 class MealBuilder extends StatefulWidget {
-  const MealBuilder({Key? key}) : super(key: key);
+  const MealBuilder({super.key});
 
   @override
   State<MealBuilder> createState() => _MealBuilderState();

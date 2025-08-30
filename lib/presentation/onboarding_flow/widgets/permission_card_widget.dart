@@ -11,13 +11,13 @@ class PermissionCardWidget extends StatelessWidget {
   final VoidCallback onTap;
 
   const PermissionCardWidget({
-    Key? key,
+    super.key,
     required this.iconName,
     required this.title,
     required this.description,
     required this.isGranted,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

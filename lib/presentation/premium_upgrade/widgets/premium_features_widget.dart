@@ -4,7 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../../core/app_export.dart';
 
 class PremiumFeaturesWidget extends StatelessWidget {
-  const PremiumFeaturesWidget({Key? key}) : super(key: key);
+  const PremiumFeaturesWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class PremiumFeaturesWidget extends StatelessWidget {
         'icon': 'support_agent',
         'title': 'Priority Support',
         'description': '24/7 dedicated customer support',
-        'color': AppTheme.secondaryLight,
+        'color': AppTheme.primaryLight,
       },
     ];
 

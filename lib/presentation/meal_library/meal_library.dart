@@ -9,7 +9,7 @@ import './widgets/meal_card_widget.dart';
 import './widgets/meal_search_widget.dart';
 
 class MealLibrary extends StatefulWidget {
-  const MealLibrary({Key? key}) : super(key: key);
+  const MealLibrary({super.key});
 
   @override
   State<MealLibrary> createState() => _MealLibraryState();

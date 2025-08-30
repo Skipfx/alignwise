@@ -7,9 +7,9 @@ class WorkoutCreationModal extends StatefulWidget {
   final VoidCallback onWorkoutCreated;
 
   const WorkoutCreationModal({
-    Key? key,
+    super.key,
     required this.onWorkoutCreated,
-  }) : super(key: key);
+  });
 
   @override
   State<WorkoutCreationModal> createState() => _WorkoutCreationModalState();

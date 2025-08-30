@@ -7,9 +7,9 @@ class StatsOverviewWidget extends StatelessWidget {
   final Map<String, dynamic> statsData;
 
   const StatsOverviewWidget({
-    Key? key,
+    super.key,
     required this.statsData,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +170,7 @@ class StatsOverviewWidget extends StatelessWidget {
         SizedBox(height: 2.h),
         ...achievements
             .map((achievement) => _buildAchievementCard(achievement))
-            .toList(),
+            ,
       ],
     );
   }

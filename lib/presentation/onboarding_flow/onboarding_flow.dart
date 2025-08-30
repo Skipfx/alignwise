@@ -11,7 +11,7 @@ import './widgets/permission_card_widget.dart';
 import './widgets/workout_animation_widget.dart';
 
 class OnboardingFlow extends StatefulWidget {
-  const OnboardingFlow({Key? key}) : super(key: key);
+  const OnboardingFlow({super.key});
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();

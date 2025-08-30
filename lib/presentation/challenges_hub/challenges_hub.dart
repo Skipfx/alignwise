@@ -9,7 +9,7 @@ import './widgets/stats_header.dart';
 import './widgets/team_challenge_card.dart';
 
 class ChallengesHub extends StatefulWidget {
-  const ChallengesHub({Key? key}) : super(key: key);
+  const ChallengesHub({super.key});
 
   @override
   State<ChallengesHub> createState() => _ChallengesHubState();
@@ -516,7 +516,7 @@ class _ChallengesHubState extends State<ChallengesHub>
                       ],
                     ),
                   ))
-              .toList(),
+              ,
           SizedBox(height: 4.h),
         ],
       ),
@@ -649,7 +649,7 @@ class _ChallengesHubState extends State<ChallengesHub>
                         // Navigate to team details
                       },
                     ))
-                .toList(),
+                ,
           ] else ...[
             Center(
               child: Column(

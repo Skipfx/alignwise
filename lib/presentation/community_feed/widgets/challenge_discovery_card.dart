@@ -9,10 +9,10 @@ class ChallengeDiscoveryCard extends StatelessWidget {
   final VoidCallback onJoin;
 
   const ChallengeDiscoveryCard({
-    Key? key,
+    super.key,
     required this.challenge,
     required this.onJoin,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
